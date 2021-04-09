@@ -291,12 +291,12 @@ the CADR of the list."
 
 (defun texinfo-escape (string)
   (let ((chars
-          (loop for char across string
-                if (member char '(#\{ #\} #\@))
-                  collect #\@ and
-                collect char
-                else
-                  collect char)))
+          (loop
+            for char across string
+            if (member char '(#\{ #\} #\@))
+              collect #\@ and collect char
+            else
+              collect char)))
     (coerce chars 'string)))
 
 (defun render-variable-info (info stream)
@@ -466,7 +466,7 @@ the CADR of the list."
       )))
 
 
-(defun render-texinfo-source-for-system (asdf-system stream)
+(defun render-texinfo-source-for-system (asdf-system stream &key (include-readme t))
   (flet ((fmt (str &rest args)
            (apply #'format stream str args))
          (fmtln (str &rest args)
@@ -475,7 +475,11 @@ the CADR of the list."
          (ln ()
            (terpri stream)))
     (let* ((system-name (asdf:component-name asdf-system))
-           (system-packages (asdf-system-packages asdf-system)))
+           (system-packages (asdf-system-packages asdf-system))
+           (readme-file (find "README"
+                              (fad:list-directory (asdf:system-source-directory asdf-system))
+                              :key 'pathname-name
+                              :test 'string=)))
       (fmtln "@setfilename ~a" system-name)
       (fmtln "@settitle ~a system reference" system-name)
       (ln)
@@ -500,6 +504,8 @@ the CADR of the list."
 
       (ln)
       (fmtln "@menu")
+      (when (and include-readme readme-file)
+        (fmtln "* README::"))
       (loop for package in system-packages
             do
                (fmtln "* ~a::" (package-name package)))
@@ -507,6 +513,13 @@ the CADR of the list."
       (fmtln "@end menu")
       (ln)
 
+      (when (and include-readme readme-file)
+        (fmtln "@node README")
+        (fmtln "@chapter README")
+        (ln)
+        (write-string (alexandria:read-file-into-string readme-file) stream)
+        (ln) (ln))
+      
       (loop for package in system-packages
             do (render-texinfo-node-for-package package stream))
 
