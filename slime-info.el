@@ -14,6 +14,7 @@
     (let ((buffer (find-file-noselect temp-file)))
       (with-current-buffer buffer
         (makeinfo-buffer)
+        ;;(kill-buffer (get-buffer "*compilation*"))
         (display-buffer)))))
 
 (defun slime-info-symbol (symbol-name)
@@ -85,7 +86,7 @@ With prefix argument include internal symbols."
   "Online Common Lisp documentation via Emacs Info."
   (:authors "Mariano Montone <marianomontone@gmail.com>")
   (:license "GPL")
-  (:slime-dependencies slime-repl)
+  (:slime-dependencies slime-asdf)
   (:swank-dependencies swank-info))
 
 ;;; Utilities
