@@ -5,9 +5,10 @@
 ;;; Code:
 
 (require 'slime)
+(require 'slime-asdf)
 
 (defun slime-info/display-info-buffer (texinfo-source)
-  (let ((temp-file (make-temp-file "info-buffer-test")))
+  (let ((temp-file (make-temp-file "info-buffer-")))
     (with-temp-file temp-file
       (insert texinfo-source))
     (let ((buffer (find-file-noselect temp-file)))
@@ -28,6 +29,14 @@
   (when (not package-name)
     (error "No package name given"))
   (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-package ,package-name))))
+    (slime-info/display-info-buffer texinfo-source)))
+
+(defun slime-info-system (system-name)
+  "Show information about Common Lisp ASDF system named SYSTEM-NAME, using an Info buffer."
+  (interactive (list (slime-read-system-name "System name: ")))
+  (when (not system-name)
+    (error "No ASDF system name given"))
+  (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-system ,system-name))))
     (slime-info/display-info-buffer texinfo-source)))
 
 ;; (defun slime-info-apropos (symbol-name)
