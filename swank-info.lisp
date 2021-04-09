@@ -339,7 +339,7 @@ the CADR of the list."
       (fmtln "@end direntry")
       (ln)
       (fmtln "@titlepage")
-      (fmtln "@title ~a" symbol) 
+      (fmtln "@title ~a" symbol)
       (fmtln "@end titlepage")
       (fmtln "@contents")
       (fmtln "@node Top")
@@ -349,8 +349,51 @@ the CADR of the list."
       (ln)
       (fmt "@bye"))))
 
+(defun render-texinfo-source-for-symbols (title symbols stream)
+  (flet ((fmt (str &rest args)
+           (apply #'format stream str args))
+         (fmtln (str &rest args)
+           (apply #'format stream str args)
+           (terpri stream))
+         (ln ()
+           (terpri stream)))
+    (fmtln "@setfilename ~a.info" title)
+    (fmtln "@settitle ~a info" title)
+    (ln)
+    (fmtln "@dircategory Common Lisp")
+    (fmtln "@direntry")
+    (fmtln "* ~a: apropos ~a" title title)
+    (fmtln "@end direntry")
+    (ln)
+    (fmtln "@titlepage")
+    (fmtln "@title ~a" title)
+    (fmtln "@end titlepage")
+    (fmtln "@contents")
+    (fmtln "@node Top")
+    (fmtln "@top ~a" title)
+    (ln)
+    (loop for symbol in symbols
+          do
+             (render-info (read-symbol-info symbol) stream)
+             (ln))
+    (ln)
+    (fmt "@bye")))
+
 (defslimefun texinfo-source-for-symbol (symbol-name)
   (with-output-to-string (s)
     (render-texinfo-source-for-symbol (read-from-string symbol-name) s)))
+
+(defslimefun texinfo-source-for-apropos (name &optional external-only
+                                              case-sensitive package)
+  "Make an apropos search for Emacs. Show the result in an Info buffer."
+  (let ((package (if package
+                     (or (parse-package package)
+                         (error "No such package: ~S" package)))))
+    (let ((symbols (apropos-symbols name external-only case-sensitive package)))
+      (with-output-to-string (s)
+        (render-texinfo-source-for-symbols
+         ;;(format nil "Apropos: ~a" name)
+         name
+         symbols s)))))
 
 (provide :swank-texinfo)
