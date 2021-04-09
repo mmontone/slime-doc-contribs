@@ -33,7 +33,7 @@
 
 (defun slime-info-system (system-name)
   "Show information about Common Lisp ASDF system named SYSTEM-NAME, using an Info buffer."
-  (interactive (list (slime-read-system-name "System name: ")))
+  (interactive (list (slime-read-system-name "System name")))
   (when (not system-name)
     (error "No ASDF system name given"))
   (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-system ,system-name))))
