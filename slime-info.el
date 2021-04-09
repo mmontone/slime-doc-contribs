@@ -6,72 +6,6 @@
 
 (require 'slime)
 
-(defun info-buffer-test ()
-  (let ((temp-file (make-temp-file "info-buffer-test")))
-    (with-temp-file temp-file
-      (insert "@setfilename info-buffer-test.info
-@settitle Sample Manual 1.0
-
-@copying
-This is a short example of a complete Texinfo file.
-
-Copyright @copyright{} 2016 Free Software Foundation, Inc.
-@end copying
-
-@titlepage
-@title Sample Title
-@page
-@vskip 0pt plus 1filll
-@insertcopying
-@end titlepage
-
-@c Output the table of the contents at the beginning.
-@contents
-
-@ifnottex
-@node Top
-@top GNU Sample
-
-This manual is for GNU Sample
-(version @value{VERSION}, @value{UPDATED}).
-@end ifnottex
-
-@menu
-* First Chapter::    The first chapter is the
-                      only chapter in this sample.
-* Index::            Complete index.
-@end menu
-
-@node First Chapter
-@chapter First Chapter
-
-@cindex chapter, first
-
-This is the first chapter.
-@cindex index entry, another
-
-Here is a numbered list.
-
-@enumerate
-@item
-This is the first item.
-
-@item
-This is the second item.
-@end enumerate
-
-
-@node Index
-@unnumbered Index
-
-@printindex cp
-
-@bye"))
-    (let ((buffer (find-file-noselect temp-file)))
-      (with-current-buffer buffer
-        (makeinfo-buffer)
-        (display-buffer)))))
-
 (defun slime-info/display-info-buffer (texinfo-source)
   (let ((temp-file (make-temp-file "info-buffer-test")))
     (with-temp-file temp-file
@@ -81,12 +15,19 @@ This is the second item.
         (makeinfo-buffer)
         (display-buffer)))))
 
+(defun slime-info-symbol (symbol-name)
+  (interactive (list (slime-read-symbol-name "Symbol: ")))
+  (when (not symbol-name)
+    (error "No symbol name given"))
+  (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-symbol ,symbol-name))))
+    (slime-info/display-info-buffer texinfo-source)))
+
 (defun slime-info-package (package-name)
   "Show information about Common Lisp package named PACKAGE-NAME, using an Info buffer."
-  (interactive (list (slime-read-symbol-name "Package name: ")))
+  (interactive (list (slime-read-package-name "Package name: ")))
   (when (not package-name)
     (error "No package name given"))
-  (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-package ',package-name))))
+  (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-package ,package-name))))
     (slime-info/display-info-buffer texinfo-source)))
 
 (defun slime-info-apropos (symbol-name)
