@@ -465,6 +465,75 @@ the CADR of the list."
                  (ln))
       )))
 
+(defvar +ascii-alphabet+
+  "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  "All letters in 7 bit ASCII.")
+
+(defun random-string (&optional (length 32) (alphabet +ascii-alphabet+))
+  "Returns a random alphabetic string.
+
+The returned string will contain LENGTH characters chosen from
+the vector ALPHABET.
+"
+  (loop with id = (make-string length)
+        with alphabet-length = (length alphabet)
+        for i below length
+        do (setf (cl:aref id i)
+                 (cl:aref alphabet (random alphabet-length)))
+        finally (return id)))
+
+(defun replace-all (string part replacement &key (test #'char=))
+  "Returns a new string in which all the occurences of the part 
+is replaced with replacement."
+  (with-output-to-string (out)
+    (loop with part-length = (length part)
+          for old-pos = 0 then (+ pos part-length)
+          for pos = (search part string
+                            :start2 old-pos
+                            :test test)
+          do (write-string string out
+                           :start old-pos
+                           :end (or pos (length string)))
+          when pos do (write-string replacement out)
+          while pos)))
+
+(defun render-readme (readme-file stream &key (use-pandoc t))
+  (flet ((render-readme-file ()
+           (write-line "@node README" stream)
+           (write-line "@chapter README" stream)
+           (terpri stream)
+           (write-string (alexandria:read-file-into-string readme-file) stream))
+         (write-texinfo-line (line stream)
+           (let ((result line))
+             (setq result (replace-all result "@subsection" "@subsubsection"))
+             (setq result (replace-all result "@section" "@subsection"))
+             (setq result (replace-all result "@chapter" "@section"))
+             (write-line result stream))))
+    (if (not use-pandoc)
+        (render-readme-file)
+        ;; else
+        ;; try with pandoc
+        (let* ((readme-texinfo-filename (pathname (format nil "/tmp/readme-~a.texi"
+                                                          (random-string 10))))
+               (pandoc-result (third (multiple-value-list
+                                      (uiop/run-program:run-program (list "pandoc" (princ-to-string readme-file) "-o" (princ-to-string readme-texinfo-filename)))))))
+          (if (zerop pandoc-result)
+              ;; pandoc transformation succeeded
+              (with-open-file (f readme-texinfo-filename
+                                 :direction :input
+                                 :external-format :utf-8)
+                (write-line "@node README" stream)
+                (write-line "@chapter README" stream)
+                (loop with node-foundp := nil
+                      for line := (read-line f nil nil)
+                      while line
+                      if (not node-foundp)
+                         do (setf node-foundp (string= (subseq line 0 4) "@top"))
+                      else
+                        do (write-texinfo-line line stream)))
+              ;; else, pandoc failed
+              ;; just render the readme file
+              (render-readme-file))))))
 
 (defun render-texinfo-source-for-system (asdf-system stream &key (include-readme t))
   (flet ((fmt (str &rest args)
@@ -514,10 +583,7 @@ the CADR of the list."
       (ln)
 
       (when (and include-readme readme-file)
-        (fmtln "@node README")
-        (fmtln "@chapter README")
-        (ln)
-        (write-string (alexandria:read-file-into-string readme-file) stream)
+        (render-readme readme-file stream)
         (ln) (ln))
       
       (loop for package in system-packages
