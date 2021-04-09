@@ -402,7 +402,8 @@ the CADR of the list."
     (find :file (cdr location)
           :key 'car))))
 
-(defvar *package-source-locations* (make-hash-table))
+(defvar *package-source-locations* (make-hash-table)
+  "A cache of packages source locations")
 
 (defun package-source-location (package)
   (or (gethash package *package-source-locations*)
