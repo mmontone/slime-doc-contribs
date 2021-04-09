@@ -402,18 +402,26 @@ the CADR of the list."
     (find :file (cdr location)
           :key 'car))))
 
+(defvar *package-source-locations* (make-hash-table))
+
+(defun package-source-location (package)
+  (or (gethash package *package-source-locations*)
+      (setf (gethash package *package-source-locations*)
+            (swank/backend:find-source-location package))))
+
 ;; This function finds the packages defined from an ASDF, approximatly. And it is very slow.
 (defun asdf-system-packages (system)
-  (let ((asdf-system (if (or (symbolp system)
+  (let* ((asdf-system (if (or (symbolp system)
                              (stringp system))
                          (asdf:find-system system)
-                         system)))
+                         system))
+         (system-source-directory (asdf:system-source-directory asdf-system)))
     (loop for package in (list-all-packages)
-          for location := (swank/backend:find-source-location package)
+          for location := (package-source-location package)
           when (and (eql (car location) :location)
                     (uiop/pathname:subpathp 
                      (location-pathname location)
-                     (asdf:system-source-directory asdf-system)))
+                     system-source-directory))
             collect package)))
 
 (provide :swank-texinfo)
