@@ -7,14 +7,38 @@
 (require 'slime)
 (require 'slime-asdf)
 
+(defvar *slime-info-debug* nil)
+
+(defun bury-compile-buffer-if-successful (buffer string)
+  "Bury a compilation buffer if succeeded without warnings "
+  (if (and
+       (string-match "compilation" (buffer-name buffer))
+       (string-match "finished" string)
+       (not
+        (with-current-buffer buffer
+          **(goto-char 1)**
+          (search-forward "warning" nil t))))
+      (run-with-timer 1 nil
+                      (lambda (buf)
+                        (bury-buffer buf)
+                        (switch-to-prev-buffer (get-buffer-window buf) 'kill))
+                      buffer)))
+
 (defun slime-info/display-info-buffer (texinfo-source)
-  (let ((temp-file (make-temp-file "info-buffer-")))
+  (let ((temp-file (make-temp-file "slime-info-")))
     (with-temp-file temp-file
       (insert texinfo-source))
+    
     (let ((buffer (find-file-noselect temp-file)))
       (with-current-buffer buffer
         (makeinfo-buffer)
         ;;(kill-buffer (get-buffer "*compilation*"))
+        ;;(delete-window (get-buffer-window (get-buffer "*compilation*")))
+        ;; Setup timer to kill *compilation* buffer after a second.
+        (unless *slime-info-debug*
+          (run-with-timer 1 nil
+                          (lambda ()
+                            (kill-buffer (get-buffer "*compilation*")))))
         (display-buffer)))))
 
 (defun slime-info-symbol (symbol-name)
