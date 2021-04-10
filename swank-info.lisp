@@ -289,7 +289,8 @@ the CADR of the list."
 (defun render-info (info stream &rest args)
   (case (aget info :type)
     (:variable (apply #'render-variable-info info stream args))
-    (:function (apply #'render-function-info info stream args))))
+    (:function (apply #'render-function-info info stream args))
+    (:generic-function (apply #'render-generic-function-info info stream args))))
 
 (defun texinfo-escape (string)
   (let ((chars
@@ -319,6 +320,24 @@ the CADR of the list."
   (terpri stream))
 
 (defun render-function-info (info stream &key package)
+  "If no PACKAGE is given, use symbol package as category"
+  (if (not package)
+      (format stream "@deffn ~a ~a ~a"
+              (package-name (symbol-package (aget info :name)))
+              (aget info :name)
+              (aget info :args))
+      ;; else
+      (format stream "@defun ~a ~a" (aget info :name) (aget info :args)))
+  (terpri stream) (terpri stream)
+  (when (aget info :documentation)
+    (write-string (texinfo-escape (aget info :documentation)) stream))
+  (terpri stream)
+  (if (not package)
+      (write-string "@end deffn" stream)
+      (write-string "@end defun" stream))
+  (terpri stream))
+
+(defun render-generic-function-info (info stream &key package)
   "If no PACKAGE is given, use symbol package as category"
   (if (not package)
       (format stream "@deffn ~a ~a ~a"
@@ -525,6 +544,7 @@ is replaced with replacement."
            (write-string (alexandria:read-file-into-string readme-file) stream))
          (write-texinfo-line (line stream)
            (let ((result line))
+             (setq result (replace-all result "@subsubsection" "@subsubsubsection"))
              (setq result (replace-all result "@subsection" "@subsubsection"))
              (setq result (replace-all result "@section" "@subsection"))
              (setq result (replace-all result "@chapter" "@section"))
