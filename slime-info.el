@@ -6,6 +6,7 @@
 
 (require 'slime)
 (require 'slime-asdf)
+(require 'info)
 
 (defvar *slime-info-debug* nil)
 
