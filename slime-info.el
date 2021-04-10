@@ -10,7 +10,7 @@
 (defvar *slime-info-debug* nil)
 
 (defun bury-compile-buffer-if-successful (buffer string)
-  "Bury a compilation buffer if succeeded without warnings "
+  "Bury a compilation buffer if succeeded without warnings."
   (if (and
        (string-match "compilation" (buffer-name buffer))
        (string-match "finished" string)
@@ -25,6 +25,7 @@
                       buffer)))
 
 (defun slime-info/display-info-buffer (texinfo-source)
+  "Display TEXINFO-SOURCE in an Info buffer."
   (let ((temp-file (make-temp-file "slime-info-")))
     (with-temp-file temp-file
       (insert texinfo-source))
@@ -42,6 +43,7 @@
         (display-buffer)))))
 
 (defun slime-info-symbol (symbol-name)
+  "Show a buffer with description of SYMBOL-NAME in an Info buffer."
   (interactive (list (slime-read-symbol-name "Symbol: ")))
   (when (not symbol-name)
     (error "No symbol name given"))
@@ -79,8 +81,11 @@
 
 (defun slime-info-apropos (string &optional only-external-p package
                              case-sensitive-p)
-  "Show all bound symbols whose names match STRING. With prefix
-arg, you're interactively asked for parameters of the search."
+  "Show all bound symbols whose names match STRING.
+With prefix arg, you're interactively asked for parameters of the search.
+ONLY-EXTERNAL-P: apropos only external symbols.
+PACKAGE: package to apropos.
+CASE-SENSITIVE-P: toggle case sensitiveness."
   (interactive
    (if current-prefix-arg
        (list (read-string "SLIME Apropos: ")
@@ -94,13 +99,14 @@ arg, you're interactively asked for parameters of the search."
       (slime-info/display-info-buffer texinfo-source))))
 
 (defun slime-info-apropos-all ()
-  "Shortcut for (slime-apropos <string> nil nil)"
+  "Shortcut for (slime-apropos <string> nil nil)."
   (interactive)
   (slime-info-apropos (read-string "SLIME Apropos: ") nil nil))
 
 (defun slime-info-apropos-package (package &optional internal)
   "Show apropos listing for symbols in PACKAGE.
-With prefix argument include internal symbols."
+With prefix argument include internal symbols.
+INTERNAL: whether to include package internal symbols."
   (interactive (list (let ((pkg (slime-read-package-name "Package: ")))
                        (if (string= pkg "") (slime-current-package) pkg))
                      current-prefix-arg))
