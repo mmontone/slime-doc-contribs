@@ -77,16 +77,18 @@ the CADR of the list."
                                    (mapcar #'format-argument-to-string (swank-backend:arglist symbol))
                                    )
                       (princ-to-string (swank-backend:arglist symbol))))
+        (cons :package (symbol-package symbol))
         (cons :type (cond ((macro-function symbol) :macro)
                           ((typep (symbol-function symbol) 'generic-function) :generic-function)
                           (t :function)))))
 
 (defun load-variable-info (symbol)
-  (list (cons :name (string symbol))
+  (list (cons :name symbol)
         (cons :documentation (documentation symbol 'variable))
         (cons :boundp (boundp symbol))
         (cons :value (when (boundp symbol) (prin1-to-string (symbol-value symbol))))
         (cons :constant-p (constantp symbol))
+        (cons :package (symbol-package symbol))
         (cons :type :variable)))
 
 (defun find-superclasses (class)
@@ -284,10 +286,10 @@ the CADR of the list."
       (fmtln "@printindex fn")
       (fmt "@bye"))))
 
-(defun render-info (info stream)
+(defun render-info (info stream &rest args)
   (case (aget info :type)
-    (:variable (render-variable-info info stream))
-    (:function (render-function-info info stream))))
+    (:variable (apply #'render-variable-info info stream args))
+    (:function (apply #'render-function-info info stream args))))
 
 (defun texinfo-escape (string)
   (let ((chars
@@ -299,22 +301,39 @@ the CADR of the list."
               collect char)))
     (coerce chars 'string)))
 
-(defun render-variable-info (info stream)
-  (format stream "@defvar ~a" (aget info :name))
+(defun render-variable-info (info stream &key package)
+  "If no PACKAGE is given, use symbol package as category"
+  (if (not package)
+      (format stream "@defvr ~a ~a"
+              (package-name (symbol-package (aget info :name)))
+              (aget info :name))
+      ;; else
+      (format stream "@defvar ~a" (aget info :name)))
   (terpri stream) (terpri stream)
   (when (aget info :documentation)
     (write-string (texinfo-escape (aget info :documentation)) stream))
   (terpri stream)
-  (write-string "@end defvar" stream)
+  (if (not package)
+      (write-string "@end defvr" stream)
+      (write-string "@end defvar" stream))
   (terpri stream))
 
-(defun render-function-info (info stream)
-  (format stream "@defun ~a ~a" (aget info :name) (aget info :args))
+(defun render-function-info (info stream &key package)
+  "If no PACKAGE is given, use symbol package as category"
+  (if (not package)
+      (format stream "@deffn ~a ~a ~a"
+              (package-name (symbol-package (aget info :name)))
+              (aget info :name)
+              (aget info :args))
+      ;; else
+      (format stream "@defun ~a ~a" (aget info :name) (aget info :args)))
   (terpri stream) (terpri stream)
   (when (aget info :documentation)
     (write-string (texinfo-escape (aget info :documentation)) stream))
   (terpri stream)
-  (write-string "@end defun" stream)
+  (if (not package)
+      (write-string "@end deffn" stream)
+      (write-string "@end defun" stream))
   (terpri stream))
 
 (defslimefun texinfo-source-for-package (package-name)
@@ -349,7 +368,7 @@ the CADR of the list."
       (ln)
       (fmt "@bye"))))
 
-(defun render-texinfo-source-for-symbols (title symbols stream)
+(defun render-texinfo-source-for-symbols (title symbols stream &key package)
   (flet ((fmt (str &rest args)
            (apply #'format stream str args))
          (fmtln (str &rest args)
@@ -374,7 +393,7 @@ the CADR of the list."
     (ln)
     (loop for symbol in symbols
           do
-             (render-info (read-symbol-info symbol) stream)
+             (render-info (read-symbol-info symbol) stream :package package)
              (ln))
     (ln)
     (fmt "@bye")))
@@ -386,15 +405,16 @@ the CADR of the list."
 (defslimefun texinfo-source-for-apropos (name &optional external-only
                                               case-sensitive package)
   "Make an apropos search for Emacs. Show the result in an Info buffer."
-  (let ((package (if package
-                     (or (parse-package package)
-                         (error "No such package: ~S" package)))))
+  (let ((package (when package
+                   (or (parse-package package)
+                       (error "No such package: ~S" package)))))
     (let ((symbols (apropos-symbols name external-only case-sensitive package)))
       (with-output-to-string (s)
         (render-texinfo-source-for-symbols
          ;;(format nil "Apropos: ~a" name)
          name
-         symbols s)))))
+         symbols s
+         :package package)))))
 
 (defun location-pathname (location)
   (pathname

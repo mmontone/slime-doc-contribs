@@ -110,7 +110,7 @@ INTERNAL: whether to include package internal symbols."
   (interactive (list (let ((pkg (slime-read-package-name "Package: ")))
                        (if (string= pkg "") (slime-current-package) pkg))
                      current-prefix-arg))
-  (slime-apropos "" (not internal) package))
+  (slime-info-apropos "" (not internal) package))
 
 (define-slime-contrib slime-info
   "Online Common Lisp documentation via Emacs Info."
