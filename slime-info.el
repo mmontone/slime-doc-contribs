@@ -7,6 +7,7 @@
 (require 'slime)
 (require 'slime-asdf)
 (require 'info)
+(require 'texinfo)
 
 (defvar *slime-info-debug* nil)
 

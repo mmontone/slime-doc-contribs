@@ -1,3 +1,5 @@
+(require :closer-mop)
+
 (in-package :swank)
 
 (defun aget (alist key)
