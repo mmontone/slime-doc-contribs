@@ -755,6 +755,7 @@ asdfasd" nil)
       (push (cons :parsed-documentation
                   (parse-docstring (aget info :documentation) nil))
             info))
+    (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))
     info))
 
 (provide :swank-info)

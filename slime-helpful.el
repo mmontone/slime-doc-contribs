@@ -24,8 +24,19 @@
       (insert (propertize (second word) 'face 'highlight)))
      (t (error "Don't know how to render")))))
 
+(defun sh--propertize-heading (text)
+  (propertize text 'face 'bold))
+
 (let ((symbol-info (slime-eval `(swank::read-elisp-symbol-info 'split-sequence:split-sequence))))
   (let ((buffer (get-buffer-create "*slime-helpful*")))
     (with-current-buffer buffer
+      (insert (sh--propertize-heading (cdr (assoc :name symbol-info))))
+      (newline 2)
+      (insert (format "This is a FUNCTION in package %s" (cdr (assoc :package symbol-info))))
+      (newline 2)
+      (insert (sh--propertize-heading "Signature"))
+      (newline)
+      (insert (cdr (assoc :args symbol-info)))
+      (newline 2)
       (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
       (display-buffer buffer))))
