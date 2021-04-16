@@ -1,4 +1,6 @@
 (require :closer-mop)
+(require :alexandria)
+(require :cl-fad)
 
 (in-package :swank)
 

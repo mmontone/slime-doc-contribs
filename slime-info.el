@@ -128,10 +128,12 @@ INTERNAL: whether to include package internal symbols."
 
 (defcustom slime-info-debug nil
   "Toggle slime-info debug mode"
+  :type 'boolean
   :group 'slime-info)
 
 (defcustom slime-info-use-pandoc t
   "Wether to use pandoc for processing ASDF system docs when available"
+  :type 'boolean
   :group 'slime-info)
 
 (provide 'slime-info)
