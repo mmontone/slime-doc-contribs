@@ -316,7 +316,7 @@ the CADR of the list."
       (format stream "@defvar ~a" (aget info :name)))
   (terpri stream) (terpri stream)
   (when (aget info :documentation)
-    (write-string (texinfo-escape (aget info :documentation)) stream))
+    (render-parsed-docstring (parse-docstring (texinfo-escape (aget info :documentation)) nil) stream))
   (terpri stream)
   (if (not package)
       (write-string "@end defvr" stream)
@@ -334,7 +334,10 @@ the CADR of the list."
       (format stream "@defun ~a ~a" (aget info :name) (aget info :args)))
   (terpri stream) (terpri stream)
   (when (aget info :documentation)
-    (write-string (texinfo-escape (aget info :documentation)) stream))
+    (let* ((arg-names (list-lambda-list-args (read-from-string (aget info :args)))))
+      (render-parsed-docstring
+       (parse-docstring (texinfo-escape (aget info :documentation)) arg-names)
+       stream)))
   (terpri stream)
   (if (not package)
       (write-string "@end deffn" stream)
@@ -682,20 +685,37 @@ is replaced with replacement."
           (vector-push-extend x current-word)))
     (nreverse words)))
 
+(defun list-lambda-list-args (lambda-list)
+  (multiple-value-bind (required optional rest keys aok aux keyp)
+      (alexandria:parse-ordinary-lambda-list lambda-list)
+    (concatenate 'list
+                 required
+                 (mapcar 'car optional)
+                 rest
+                 (mapcar 'cadar keys)
+                 aux)))
+
+(defun list-package-info-args (package-info)
+  (list-lambda-list-args
+   (read-from-string (aget package-info :args))))
+
 (defun parse-docstring (docstring bound-args &key case-sensitive (package *package*))
-  (let ((words (split-string-with-delimiter docstring
-                                            (lambda (char)
-                                              (member char '(#\space #\newline #\tab)))))
+  (let ((words (split-string-with-delimiter
+                docstring
+                (lambda (char)
+                  (member char '(#\space #\newline #\tab)))))
         (string-test (if case-sensitive
                          'string=
                          'equalp)))
     (concat-rich-text
      (loop for word in words
            collect (cond
-                     ((member (intern (string-upcase word) package) bound-args)
+                     ((member (string-upcase word) (mapcar 'symbol-name bound-args) :test string-test)
                       (list :arg word))
                      ((fboundp (intern (string-upcase word) package))
                       (list :fn word))
+                     ((boundp (intern (string-upcase word) package))
+                      (list :var word))
                      ((eql (aref word 0) #\:)
                       (list :key word))
                      (t word))))))
@@ -705,6 +725,25 @@ is replaced with replacement."
 (parse-docstring "funcall parse-docstring" nil)
 (parse-docstring "adsfa adf
 asdfasd" nil)
-(parse-docstring "lala :lolo" nil)
+      (parse-docstring "lala :lolo" nil)
+      (parse-docstring "*communication-style*" nil)      
+
+(defun render-parsed-docstring (docstring stream)
+  (loop for word in docstring
+        do
+           (cond
+             ((stringp word) (write-string word stream))
+             ((and (listp word) (eql (car word) :arg))
+              (format stream "@var{~a}" (second word)))
+             ((and (listp word) (eql (car word) :fn))
+              (format stream "@ref{~a}" (second word)))
+             ((and (listp word) (eql (car word) :var))
+              (format stream "@ref{~a}" (second word)))
+             ((and (listp word) (eql (car word) :key))
+              (format stream "@var{~a}" (second word))))))
+
+(render-parsed-docstring (parse-docstring "lala :lolo" nil) t)
+(render-parsed-docstring (parse-docstring "funcall parse-docstring" nil) t)
+(render-parsed-docstring (parse-docstring "asdf" '(asdf)) t)
 
 (provide :swank-info)
