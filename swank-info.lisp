@@ -456,14 +456,14 @@ the CADR of the list."
 ;; This function finds the packages defined from an ASDF, approximatly. And it is very slow.
 (defun asdf-system-packages (system)
   (let* ((asdf-system (if (or (symbolp system)
-                             (stringp system))
-                         (asdf:find-system system)
-                         system))
+                              (stringp system))
+                          (asdf:find-system system)
+                          system))
          (system-source-directory (asdf:system-source-directory asdf-system)))
     (loop for package in (list-all-packages)
           for location := (package-source-location package)
           when (and (eql (car location) :location)
-                    (uiop/pathname:subpathp 
+                    (uiop/pathname:subpathp
                      (location-pathname location)
                      system-source-directory))
             collect package)))
@@ -526,7 +526,7 @@ the vector ALPHABET.
         finally (return id)))
 
 (defun replace-all (string part replacement &key (test #'char=))
-  "Returns a new string in which all the occurences of the part 
+  "Returns a new string in which all the occurences of the part
 is replaced with replacement."
   (with-output-to-string (out)
     (loop with part-length = (length part)
@@ -538,7 +538,7 @@ is replaced with replacement."
                            :start old-pos
                            :end (or pos (length string)))
           when pos do (write-string replacement out)
-          while pos)))
+            while pos)))
 
 (defun render-readme (readme-file stream &key (use-pandoc t))
   (flet ((render-readme-file ()
@@ -572,7 +572,7 @@ is replaced with replacement."
                       for line := (read-line f nil nil)
                       while line
                       if (not node-foundp)
-                         do (setf node-foundp (string= (subseq line 0 4) "@top"))
+                        do (setf node-foundp (string= (subseq line 0 4) "@top"))
                       else
                         do (write-texinfo-line line stream)))
               ;; else, pandoc failed
@@ -609,7 +609,7 @@ is replaced with replacement."
       (fmtln "@top ~a system reference" system-name)
       (ln)
       (fmtln "This is a reference of Common Lisp ASDF system ~a" system-name)
-      
+
       (when (asdf:system-description asdf-system)
         (ln)
         (write-string (asdf:system-description asdf-system) stream)
@@ -629,7 +629,7 @@ is replaced with replacement."
       (when (and include-readme readme-file)
         (render-readme readme-file stream :use-pandoc use-pandoc)
         (ln) (ln))
-      
+
       (loop for package in system-packages
             do (render-texinfo-node-for-package package stream))
 
@@ -650,5 +650,61 @@ is replaced with replacement."
 (defslimefun texinfo-source-for-system (system-name)
   (with-output-to-string (s)
     (render-texinfo-source-for-system (asdf:find-system system-name) s)))
+
+(defun concat-rich-text (text)
+  text)
+
+(defun make-adjustable-string (s)
+  (make-array (length s)
+              :fill-pointer (length s)
+              :adjustable t
+              :initial-contents s
+              :element-type (array-element-type s)))
+
+(defun split-string-with-delimiter (string delimiter)
+  "Splits a string into a list of strings, with the delimiter still
+  in the resulting list."
+  (let ((words nil)
+        (current-word (make-adjustable-string ""))
+        (predicate (cond
+                     ((characterp delimiter) (lambda (char) (eql char delimiter)))
+                     ((listp delimiter) (lambda (char) (member char delimiter)))
+                     ((functionp delimiter) delimiter)
+                     (t (error "Invalid delimiter")))))
+    (do* ((i 0 (+ i 1))
+          (x (char string i) (char string i)))
+         ((>= (+ i 1) (length string)) (progn (vector-push-extend x current-word) (push current-word words)))
+      (if (funcall predicate x)
+          (unless (string= "" current-word)
+            (push current-word words)
+            (push (string x) words)
+            (setf current-word (make-adjustable-string "")))
+          (vector-push-extend x current-word)))
+    (nreverse words)))
+
+(defun parse-docstring (docstring bound-args &key case-sensitive (package *package*))
+  (let ((words (split-string-with-delimiter docstring
+                                            (lambda (char)
+                                              (member char '(#\space #\newline #\tab)))))
+        (string-test (if case-sensitive
+                         'string=
+                         'equalp)))
+    (concat-rich-text
+     (loop for word in words
+           collect (cond
+                     ((member (intern (string-upcase word) package) bound-args)
+                      (list :arg word))
+                     ((fboundp (intern (string-upcase word) package))
+                      (list :fn word))
+                     ((eql (aref word 0) #\:)
+                      (list :key word))
+                     (t word))))))
+
+(parse-docstring "asdf" nil)
+(parse-docstring "asdf" '(asdf))
+(parse-docstring "funcall parse-docstring" nil)
+(parse-docstring "adsfa adf
+asdfasd" nil)
+(parse-docstring "lala :lolo" nil)
 
 (provide :swank-info)
