@@ -746,4 +746,15 @@ asdfasd" nil)
 (render-parsed-docstring (parse-docstring "funcall parse-docstring" nil) t)
 (render-parsed-docstring (parse-docstring "asdf" '(asdf)) t)
 
+(defun read-elisp-symbol-info (symbol)
+  (let ((info (read-symbol-info symbol)))
+    (when (aget info :package)
+      (setf (cdr (assoc :package info))
+            (package-name (aget info :package))))
+    (when (aget info :documentation)
+      (push (cons :parsed-documentation
+                  (parse-docstring (aget info :documentation) nil))
+            info))
+    info))
+
 (provide :swank-info)
