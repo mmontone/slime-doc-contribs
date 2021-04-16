@@ -577,7 +577,7 @@ is replaced with replacement."
               ;; just render the readme file
               (render-readme-file))))))
 
-(defun render-texinfo-source-for-system (asdf-system stream &key (include-readme t))
+(defun render-texinfo-source-for-system (asdf-system stream &key (include-readme t) (use-pandoc t))
   (flet ((fmt (str &rest args)
            (apply #'format stream str args))
          (fmtln (str &rest args)
@@ -625,7 +625,7 @@ is replaced with replacement."
       (ln)
 
       (when (and include-readme readme-file)
-        (render-readme readme-file stream)
+        (render-readme readme-file stream :use-pandoc use-pandoc)
         (ln) (ln))
       
       (loop for package in system-packages

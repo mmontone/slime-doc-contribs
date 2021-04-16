@@ -9,8 +9,6 @@
 (require 'info)
 (require 'texinfo)
 
-(defvar *slime-info-debug* nil)
-
 (defun bury-compile-buffer-if-successful (buffer string)
   "Bury a compilation buffer if succeeded without warnings."
   (if (and
@@ -31,14 +29,14 @@
   (let ((temp-file (make-temp-file "slime-info-")))
     (with-temp-file temp-file
       (insert texinfo-source))
-    
+
     (let ((buffer (find-file-noselect temp-file)))
       (with-current-buffer buffer
         (makeinfo-buffer)
         ;;(kill-buffer (get-buffer "*compilation*"))
         ;;(delete-window (get-buffer-window (get-buffer "*compilation*")))
         ;; Setup timer to kill *compilation* buffer after a second.
-        (unless *slime-info-debug*
+        (unless slime-info-debug
           (run-with-timer 1 nil
                           (lambda ()
                             (kill-buffer (get-buffer "*compilation*")))))
@@ -65,7 +63,7 @@
   (interactive (list (slime-read-system-name "System name")))
   (when (not system-name)
     (error "No ASDF system name given"))
-  (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-system ,system-name))))
+  (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-system ,system-name :use-pandoc ,slime-info-use-pandoc))))
     (slime-info/display-info-buffer texinfo-source)))
 
 ;; (defun slime-info-apropos (symbol-name)
@@ -82,7 +80,7 @@
 ;;       (info-apropos index-entry))))
 
 (defun slime-info-apropos (string &optional only-external-p package
-                             case-sensitive-p)
+                                  case-sensitive-p)
   "Show all bound symbols whose names match STRING.
 With prefix arg, you're interactively asked for parameters of the search.
 ONLY-EXTERNAL-P: apropos only external symbols.
@@ -124,10 +122,17 @@ INTERNAL: whether to include package internal symbols."
 ;;; Utilities
 
 (defgroup slime-info nil
-  "Quicklisp support for Slime."
+  "Show Lisp documentation using Info"
   :prefix "slime-info-"
   :group 'slime)
 
+(defcustom slime-info-debug nil
+  "Toggle slime-info debug mode"
+  :group 'slime-info)
+
+(defcustom slime-info-use-pandoc t
+  "Wether to use pandoc for processing ASDF system docs when available"
+  :group 'slime-info)
 
 (provide 'slime-info)
 ;;; slime-info.el ends here
