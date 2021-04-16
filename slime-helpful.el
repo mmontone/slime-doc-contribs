@@ -1,3 +1,7 @@
+(setq lexical-binding t)
+
+(require 'cl)
+
 (let ((buffer (get-buffer-create "*slime-helpful*")))
   (with-current-buffer buffer
     (insert "hello")
@@ -6,7 +10,7 @@
     (insert "\n")
     (insert (propertize "Italic" 'face 'italic))
     (insert (propertize "Italic" 'face 'variable-pitch))
-    (display-buffer buffer)))
+    (pop-to-buffer buffer)))
 
 (slime-eval `(swank::read-elisp-symbol-info 'alexandria:flatten))
 
@@ -36,7 +40,24 @@
       (newline 2)
       (insert (sh--propertize-heading "Signature"))
       (newline)
-      (insert (cdr (assoc :args symbol-info)))
+      (insert (propertize (cdr (assoc :args symbol-info)) 'face lisp-cl-font-lock-keywords))
       (newline 2)
       (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
-      (display-buffer buffer))))
+      (newline 2)
+      (cl-flet ((goto-source (btn)
+                          (slime-edit-definition-other-window (cdr (assoc :name symbol-info)))))
+        (insert-button "Source"
+                       'action (function goto-source)))
+      (insert " ")
+      (cl-flet ((browse-references (btn)
+                                   (slime-who-calls (cdr (assoc :name symbol-info)))))
+        (insert-button "References"
+                       'action (function browse-references)
+                       'help-echo "Click button"))
+      (insert " ")
+      (insert-button "Disassemble") (insert " ")
+      (cl-flet ((lookup-in-info (btn)
+                                (info-apropos (cdr (assoc :name symbol-info)))))
+        (insert-button "Lookup in manual"
+                       'action (function lookup-in-info)))
+      (pop-to-buffer buffer))))
