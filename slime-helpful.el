@@ -82,6 +82,7 @@
 	(newline 2))      
       (insert (sh--propertize-heading "Exported symbols"))
       (newline 2)
+      (insert (make-string 80 ?\u2500))
       (dolist (symbol-info (cdr (assoc :external-symbols package-info)))
 	(let ((symbol-name (princ (cdr (assoc :name symbol-info)))))
           (insert (propertize (prin1-to-string (cdr (assoc :type symbol-info))) 'face 'slime-helpful-type))
@@ -94,7 +95,9 @@
 	      ;;(insert (cdr (assoc :documentation symbol-info)))
 	      (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
 	    (insert "Not documented"))
-	  (newline 2)))
+	  (newline)
+	  (insert (make-string 80 ?\u2500))
+	  (newline)))
       (pop-to-buffer buffer))))
 
 ;;(slime-helpful-package "ALEXANDRIA")
