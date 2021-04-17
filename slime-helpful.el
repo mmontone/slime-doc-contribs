@@ -31,12 +31,23 @@
 (defun sh--propertize-heading (text)
   (propertize text 'face 'bold))
 
-(let ((symbol-info (slime-eval `(swank::read-elisp-symbol-info 'split-sequence:split-sequence))))
-  (let ((buffer (get-buffer-create "*slime-helpful*")))
+(defun slime-helpful-package (package-name)
+  (slime-apropos-package package-name))
+
+(defun slime-helpful-function (symbol-name)
+  (interactive (list (slime-read-symbol-name "Describe symbol's function: ")))
+  (when (not symbol-name)
+    (error "No symbol given"))
+  (let* ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,symbol-name))))
+         (package-name (cdr (assoc :package symbol-info)))
+         (buffer (get-buffer-create "*slime-helpful*")))
     (with-current-buffer buffer
       (insert (sh--propertize-heading (cdr (assoc :name symbol-info))))
       (newline 2)
-      (insert (format "This is a FUNCTION in package %s" (cdr (assoc :package symbol-info))))
+      (insert (format "This is a FUNCTION in package "))
+      (insert-button package-name
+                     'action (lambda (btn)
+                               (slime-helpful-package package-name)))
       (newline 2)
       (insert (sh--propertize-heading "Signature"))
       (newline)
