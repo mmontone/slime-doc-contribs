@@ -65,6 +65,10 @@
 
 ;;(slime-helpful-symbol "ALEXANDRIA:FLATTEN")
 
+(defun kill-current-buffer ()
+  (interactive)
+  (kill-buffer (current-buffer)))
+
 (defun slime-helpful-package (package-name)
   (interactive (list (slime-read-package-name "Describe package: ")))
   (when (not package-name)
@@ -98,6 +102,9 @@
 	  (insert (make-string 80 ?\u2500))
 	  (newline))
       (setq buffer-read-only t)
+      (local-set-key "q" 'kill-current-buffer)
+      (buffer-disable-undo)
+      (set (make-local-variable 'kill-buffer-query-functions) nil)
       (pop-to-buffer buffer))))
 
 ;;(slime-helpful-package "ALEXANDRIA")
@@ -139,4 +146,10 @@
                                 (info-apropos (cdr (assoc :name symbol-info)))))
         (insert-button "Lookup in manual"
                        'action (function lookup-in-info)))
+      (setq buffer-read-only t)
+      (local-set-key "q" 'kill-current-buffer)
+      (buffer-disable-undo)
+      (set (make-local-variable 'kill-buffer-query-functions) nil)
       (pop-to-buffer buffer))))
+
+;;(slime-helpful-function "ALEXANDRIA:FLATTEN")
