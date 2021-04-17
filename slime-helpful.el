@@ -34,7 +34,7 @@
     (insert (propertize "Italic" 'face 'variable-pitch))
     (pop-to-buffer buffer)))
 
-(slime-eval `(swank::read-elisp-symbol-info 'alexandria:flatten))
+;;(slime-eval `(swank::read-elisp-symbol-info 'alexandria:flatten))
 
 (defun render-parsed-docstring (docstring)
   (dolist (word docstring)
@@ -71,7 +71,7 @@
     (error "No package name given"))
 
   (let* ((package-info (slime-eval `(swank::read-elisp-package-info ,package-name)))
-         (buffer (get-buffer-create "*slime-helpful*")))
+         (buffer (get-buffer-create (format "*slime-helpful: %s package*" package-name))))
     (with-current-buffer buffer
       (insert (sh--propertize-heading (upcase package-name)))
       (newline 2)
@@ -84,12 +84,11 @@
       (newline 2)
       (insert (make-string 80 ?\u2500))
       (dolist (symbol-info (cdr (assoc :external-symbols package-info)))
-	(let ((symbol-name (princ (cdr (assoc :name symbol-info)))))
-          (insert (propertize (prin1-to-string (cdr (assoc :type symbol-info))) 'face 'slime-helpful-type))
+	(insert (propertize (prin1-to-string (cdr (assoc :type symbol-info))) 'face 'slime-helpful-type))
           (insert " ")
-	  (insert-button symbol-name
+	  (insert-button (princ (cdr (assoc :name symbol-info)))
 			 'action (lambda (btn)
-				   (slime-helpful-symbol symbol-name)))
+				   (slime-helpful-symbol (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (newline)
 	  (if (cdr (assoc :documentation symbol-info))
 	      ;;(insert (cdr (assoc :documentation symbol-info)))
@@ -97,7 +96,8 @@
 	    (insert "Not documented"))
 	  (newline)
 	  (insert (make-string 80 ?\u2500))
-	  (newline)))
+	  (newline))
+      (setq buffer-read-only t)
       (pop-to-buffer buffer))))
 
 ;;(slime-helpful-package "ALEXANDRIA")
@@ -108,7 +108,7 @@
     (error "No symbol given"))
   (let* ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,symbol-name))))
          (package-name (cdr (assoc :package symbol-info)))
-         (buffer (get-buffer-create "*slime-helpful*")))
+         (buffer (get-buffer-create (format "*slime-helpful: %s function*" symbol-name))))
     (with-current-buffer buffer
       (insert (sh--propertize-heading (cdr (assoc :name symbol-info))))
       (newline 2)
