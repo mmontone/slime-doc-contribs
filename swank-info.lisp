@@ -21,8 +21,6 @@
      (load-variable-info symbol))
     ((safe-class-for-symbol symbol)
      (load-class-info symbol))
-    ;; This was taken from swank backend
-    ;; TODO: implement this portably
     ((tboundp symbol)
      (load-type-info symbol))
     (t (error "Cannot read info of symbol: ~a" symbol))))

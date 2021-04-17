@@ -3,6 +3,7 @@
 (require 'cl)
 (require 'anaphora)
 (require 'map)
+(require 'button)
 
 (defface slime-helpful-heading
   '((t :weight bold :underline t))
@@ -24,15 +25,14 @@
   "Face for type in Slime helpful"
   :group 'slime-helpful-faces)
 
-(let ((buffer (get-buffer-create "*slime-helpful*")))
-  (with-current-buffer buffer
-    (insert "hello")
-    (insert "\n")
-    (insert (propertize "Function" 'face 'slime-helpful-heading))
-    (insert "\n")
-    (insert (propertize "Italic" 'face 'italic))
-    (insert (propertize "Italic" 'face 'variable-pitch))
-    (pop-to-buffer buffer)))
+;; (let ((buffer (get-buffer-create "*slime-helpful*")))
+;;   (with-current-buffer buffer
+;;     (insert-button
+;;      "foo"
+;;      'action (lambda (x) (find-file "~/test.py"))
+;;      'follow-link t
+;;      'help-echo "go")
+;;     (pop-to-buffer buffer)))
 
 ;;(slime-eval `(swank::read-elisp-symbol-info 'alexandria:flatten))
 
@@ -92,7 +92,9 @@
           (insert " ")
 	  (insert-button (princ (cdr (assoc :name symbol-info)))
 			 'action (lambda (btn)
-				   (slime-helpful-symbol (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+				   (slime-helpful-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
+			 'follow-link t
+			 'help-echo "Describe symbol")
           (newline)
 	  (if (cdr (assoc :documentation symbol-info))
 	      ;;(insert (cdr (assoc :documentation symbol-info)))
@@ -105,7 +107,9 @@
       (local-set-key "q" 'kill-current-buffer)
       (buffer-disable-undo)
       (set (make-local-variable 'kill-buffer-query-functions) nil)
-      (pop-to-buffer buffer))))
+      (goto-char 0)
+      (pop-to-buffer buffer)
+      nil)))
 
 ;;(slime-helpful-package "ALEXANDRIA")
 
@@ -122,7 +126,9 @@
       (insert (format "This is a FUNCTION in package "))
       (insert-button package-name
                      'action (lambda (btn)
-                               (slime-helpful-package package-name)))
+                               (slime-helpful-package package-name))
+		     'follow-link t
+		     'help-echo "Describe package")
       (newline 2)
       (insert (sh--propertize-heading "Signature"))
       (newline)
@@ -131,25 +137,38 @@
       (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
       (newline 2)
       (cl-flet ((goto-source (btn)
-                             (slime-edit-definition-other-window (cdr (assoc :symbol symbol-info)))))
+                             (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
         (insert-button "Source"
-                       'action (function goto-source)))
+                       'action (function goto-source)
+		       'follow-link t
+		       'help-echo "Go to definition source code"))
       (insert " ")
       (cl-flet ((browse-references (btn)
-                                   (slime-who-calls (cdr (assoc :name symbol-info)))))
+                                   (slime-who-calls (prin1-to-string (cdr (assoc :symbol symbol-info))))))
         (insert-button "References"
                        'action (function browse-references)
-                       'help-echo "Click button"))
+		       'follow-link t
+                       'help-echo "Browse references"))
       (insert " ")
-      (insert-button "Disassemble") (insert " ")
+      (cl-flet ((disassemble-function (btn)
+				      (slime-disassemble-symbol (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+	(insert-button "Disassemble"
+		       'action (function disassemble-function)
+		       'follow-link t
+		       'help-echo "Disassemble function"))
+      (insert " ")
       (cl-flet ((lookup-in-info (btn)
-                                (info-apropos (cdr (assoc :name symbol-info)))))
+                                (info-apropos (prin1-to-string (cdr (assoc :symbol symbol-info))))))
         (insert-button "Lookup in manual"
-                       'action (function lookup-in-info)))
+                       'action (function lookup-in-info)
+		       'help-echo "Search for this in Info manuals"
+		       'follow-link t))
       (setq buffer-read-only t)
       (local-set-key "q" 'kill-current-buffer)
       (buffer-disable-undo)
       (set (make-local-variable 'kill-buffer-query-functions) nil)
-      (pop-to-buffer buffer))))
+      (goto-char 0)
+      (pop-to-buffer buffer)      
+      nil)))
 
 ;;(slime-helpful-function "ALEXANDRIA:FLATTEN")
