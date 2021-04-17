@@ -4,11 +4,31 @@
 (require 'anaphora)
 (require 'map)
 
+(defface slime-helpful-heading
+  '((t :weight bold :underline t))
+  "Slime helpful face for headings"
+  :group 'slime-helpful-faces)
+
+(defface slime-helpful-variable
+  '((t :foreground "orange"))
+  "Face for variables in Slime helpful"
+  :group 'slime-helpful-faces)
+
+(defface slime-helpful-name
+  '((t :foreground "orange"))
+  "Face for name in Slime helpful"
+  :group 'slime-helpful-faces)
+
+(defface slime-helpful-type
+  '((t :foreground "purple"))
+  "Face for type in Slime helpful"
+  :group 'slime-helpful-faces)
+
 (let ((buffer (get-buffer-create "*slime-helpful*")))
   (with-current-buffer buffer
     (insert "hello")
     (insert "\n")
-    (insert (propertize "Function" 'face 'bold))
+    (insert (propertize "Function" 'face 'slime-helpful-heading))
     (insert "\n")
     (insert (propertize "Italic" 'face 'italic))
     (insert (propertize "Italic" 'face 'variable-pitch))
@@ -31,7 +51,19 @@
      (t (error "Don't know how to render")))))
 
 (defun sh--propertize-heading (text)
-  (propertize text 'face 'bold))
+  (propertize text 'face 'slime-helpful-heading))
+
+(defun slime-helpful-symbol (symbol-name)
+  (interactive (list (slime-read-symbol-name "Describe symbol: ")))
+  (when (not symbol-name)
+    (error "No symbol given"))
+  (let ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,symbol-name)))))
+    (case (cdr (assoc :type symbol-info))
+      (:function (slime-helpful-function symbol-name))
+      (:package (slime-helpful-package symbol-name))
+      (t (error "TODO")))))
+
+;;(slime-helpful-symbol "ALEXANDRIA:FLATTEN")
 
 (defun slime-helpful-package (package-name)
   (interactive (list (slime-read-package-name "Describe package: ")))
@@ -51,14 +83,18 @@
       (insert (sh--propertize-heading "Exported symbols"))
       (newline 2)
       (dolist (symbol-info (cdr (assoc :external-symbols package-info)))
-        (insert (prin1-to-string (cdr (assoc :type symbol-info))))
-        (insert " ")
-        (insert (prin1-to-string (cdr (assoc :name symbol-info))))
-        (newline)
-	(if (cdr (assoc :documentation symbol-info))
-	    (insert (cdr (assoc :documentation symbol-info)))
-	  (insert "Not documented"))
-	(newline 2))
+	(let ((symbol-name (princ (cdr (assoc :name symbol-info)))))
+          (insert (propertize (prin1-to-string (cdr (assoc :type symbol-info))) 'face 'slime-helpful-type))
+          (insert " ")
+	  (insert-button symbol-name
+			 'action (lambda (btn)
+				   (slime-helpful-symbol symbol-name)))
+          (newline)
+	  (if (cdr (assoc :documentation symbol-info))
+	      ;;(insert (cdr (assoc :documentation symbol-info)))
+	      (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
+	    (insert "Not documented"))
+	  (newline 2)))
       (pop-to-buffer buffer))))
 
 ;;(slime-helpful-package "ALEXANDRIA")
