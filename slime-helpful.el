@@ -1,6 +1,8 @@
 (setq lexical-binding t)
 
 (require 'cl)
+(require 'anaphora)
+(require 'map)
 
 (let ((buffer (get-buffer-create "*slime-helpful*")))
   (with-current-buffer buffer
@@ -32,7 +34,34 @@
   (propertize text 'face 'bold))
 
 (defun slime-helpful-package (package-name)
-  (slime-apropos-package package-name))
+  (interactive (list (slime-read-package-name "Describe package: ")))
+  (when (not package-name)
+    (error "No package name given"))
+
+  (let* ((package-info (slime-eval `(swank::read-elisp-package-info ,package-name)))
+         (buffer (get-buffer-create "*slime-helpful*")))
+    (with-current-buffer buffer
+      (insert (sh--propertize-heading (upcase package-name)))
+      (newline 2)
+      (insert (format "This is a Common Lisp package with %d external symbols" (length (cdr (assoc :external-symbols package-info)))))
+      (newline 2)
+      (when (cdr (assoc :documentation package-info))
+        (insert (cdr (assoc :documentation package-info)))
+	(newline 2))      
+      (insert (sh--propertize-heading "Exported symbols"))
+      (newline 2)
+      (dolist (symbol-info (cdr (assoc :external-symbols package-info)))
+        (insert (prin1-to-string (cdr (assoc :type symbol-info))))
+        (insert " ")
+        (insert (prin1-to-string (cdr (assoc :name symbol-info))))
+        (newline)
+	(if (cdr (assoc :documentation symbol-info))
+	    (insert (cdr (assoc :documentation symbol-info)))
+	  (insert "Not documented"))
+	(newline 2))
+      (pop-to-buffer buffer))))
+
+;;(slime-helpful-package "ALEXANDRIA")
 
 (defun slime-helpful-function (symbol-name)
   (interactive (list (slime-read-symbol-name "Describe symbol's function: ")))
@@ -56,7 +85,7 @@
       (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
       (newline 2)
       (cl-flet ((goto-source (btn)
-                          (slime-edit-definition-other-window (cdr (assoc :name symbol-info)))))
+                             (slime-edit-definition-other-window (cdr (assoc :symbol symbol-info)))))
         (insert-button "Source"
                        'action (function goto-source)))
       (insert " ")

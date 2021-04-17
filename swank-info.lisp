@@ -7,6 +7,12 @@
 (defun aget (alist key)
   (cdr (assoc key alist :test 'equalp)))
 
+(defun tboundp (symbol)
+  "Returns T if a type is bound to symbol"
+  ;; This was taken from swank backend
+  ;; TODO: implement this portably
+  (sb-int:info :type :kind symbol))
+
 (defun read-symbol-info (symbol)
   (cond
     ((fboundp symbol)
@@ -14,7 +20,12 @@
     ((boundp symbol)
      (load-variable-info symbol))
     ((safe-class-for-symbol symbol)
-     (load-class-info symbol))))
+     (load-class-info symbol))
+    ;; This was taken from swank backend
+    ;; TODO: implement this portably
+    ((tboundp symbol)
+     (load-type-info symbol))
+    (t (error "Cannot read info of symbol: ~a" symbol))))
 
 (defun collect-package-info (&optional (package *package*))
   (let (docs)
@@ -71,6 +82,12 @@ the CADR of the list."
                                       (nice-princ-to-string v)))
                               #'prin1-to-string
                               #'nice-princ-to-string)))))
+
+(defun load-type-info (symbol)
+  (list (cons :name symbol)
+	(cons :package (symbol-package symbol))
+	(cons :type :type)
+	(cons :documentation (documentation symbol 'type))))
 
 (defun load-function-info (symbol)
   (list (cons :name symbol)
@@ -720,13 +737,13 @@ is replaced with replacement."
                       (list :key word))
                      (t word))))))
 
-(parse-docstring "asdf" nil)
-(parse-docstring "asdf" '(asdf))
-(parse-docstring "funcall parse-docstring" nil)
-(parse-docstring "adsfa adf
-asdfasd" nil)
-      (parse-docstring "lala :lolo" nil)
-      (parse-docstring "*communication-style*" nil)      
+;; (parse-docstring "asdf" nil)
+;; (parse-docstring "asdf" '(asdf))
+;; (parse-docstring "funcall parse-docstring" nil)
+;; (parse-docstring "adsfa adf
+;; asdfasd" nil)
+;;       (parse-docstring "lala :lolo" nil)
+;;       (parse-docstring "*communication-style*" nil)      
 
 (defun render-parsed-docstring (docstring stream)
   (loop for word in docstring
@@ -742,9 +759,9 @@ asdfasd" nil)
              ((and (listp word) (eql (car word) :key))
               (format stream "@var{~a}" (second word))))))
 
-(render-parsed-docstring (parse-docstring "lala :lolo" nil) t)
-(render-parsed-docstring (parse-docstring "funcall parse-docstring" nil) t)
-(render-parsed-docstring (parse-docstring "asdf" '(asdf)) t)
+;; (render-parsed-docstring (parse-docstring "lala :lolo" nil) t)
+;; (render-parsed-docstring (parse-docstring "funcall parse-docstring" nil) t)
+;; (render-parsed-docstring (parse-docstring "asdf" '(asdf)) t)
 
 (defun read-elisp-symbol-info (symbol)
   (let ((info (read-symbol-info symbol)))
@@ -755,7 +772,19 @@ asdfasd" nil)
       (push (cons :parsed-documentation
                   (parse-docstring (aget info :documentation) nil))
             info))
+    (push (cons :symbol (cdr (assoc :name info))) info)
     (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))
     info))
+
+(defun read-elisp-package-info (package-name)
+  (let ((package (or (find-package package-name)
+		     (error "Package not found: ~a" package-name)))
+	symbol-infos)
+    (do-external-symbols (symbol package)
+      (push (read-elisp-symbol-info symbol) symbol-infos))
+    (list (cons :type :package)
+	  (cons :name package-name)
+	  (cons :documentation (documentation package t))
+	  (cons :external-symbols symbol-infos))))
 
 (provide :swank-info)
