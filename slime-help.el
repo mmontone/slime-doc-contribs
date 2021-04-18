@@ -1,4 +1,4 @@
-(setq lexical-binding t)
+;; -*- lexical-binding: t -*-
 
 (require 'cl)
 (require 'anaphora)
@@ -8,27 +8,27 @@
 (require 'lisp-mode)
 (require 'slime)
 
-(defface slime-helpful-heading
+(defface slime-help-heading
   '((t :weight bold :underline t))
-  "Slime helpful face for headings"
-  :group 'slime-helpful-faces)
+  "Slime help face for headings"
+  :group 'slime-help-faces)
 
-(defface slime-helpful-variable
+(defface slime-help-variable
   '((t :foreground "orange"))
-  "Face for variables in Slime helpful"
-  :group 'slime-helpful-faces)
+  "Face for variables in Slime help"
+  :group 'slime-help-faces)
 
-(defface slime-helpful-name
+(defface slime-help-name
   '((t :foreground "orange"))
-  "Face for name in Slime helpful"
-  :group 'slime-helpful-faces)
+  "Face for name in Slime help"
+  :group 'slime-help-faces)
 
-(defface slime-helpful-type
+(defface slime-help-type
   '((t :foreground "purple"))
-  "Face for type in Slime helpful"
-  :group 'slime-helpful-faces)
+  "Face for type in Slime help"
+  :group 'slime-help-faces)
 
-;; (let ((buffer (get-buffer-create "*slime-helpful*")))
+;; (let ((buffer (get-buffer-create "*slime-help*")))
 ;;   (with-current-buffer buffer
 ;;     (insert-button
 ;;      "foo"
@@ -54,33 +54,33 @@
      (t (error "Don't know how to render")))))
 
 (defun sh--propertize-heading (text)
-  (propertize text 'face 'slime-helpful-heading))
+  (propertize text 'face 'slime-help-heading))
 
-(defun slime-helpful-symbol (symbol-name)
+(defun slime-help-symbol (symbol-name)
   (interactive (list (slime-read-symbol-name "Describe symbol: ")))
   (when (not symbol-name)
     (error "No symbol given"))
   (let ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,symbol-name)))))
     (case (cdr (assoc :type symbol-info))
-      (:function (slime-helpful-function symbol-name))
-      (:package (slime-helpful-package symbol-name))
+      (:function (slime-help-function symbol-name))
+      (:package (slime-help-package symbol-name))
       (t (error "TODO")))))
 
-;;(slime-helpful-symbol "ALEXANDRIA:FLATTEN")
+;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
 
 (defun kill-current-buffer ()
   (interactive)
   (kill-buffer (current-buffer)))
 
-(defun slime-helpful-package (package-name)
+(defun slime-help-package (package-name)
   (interactive (list (slime-read-package-name "Describe package: ")))
   (when (not package-name)
     (error "No package name given"))
   
-  (let ((buffer-name (format "*slime-helpful: %s package*" package-name)))
+  (let ((buffer-name (format "*slime-help: %s package*" package-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
-      (return-from slime-helpful-package))
+      (return-from slime-help-package))
     (let* ((package-info (slime-eval `(swank::read-elisp-package-info ,package-name)))
 	   (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
@@ -95,11 +95,11 @@
 	(newline 2)
 	(insert (make-string 80 ?\u2500))
 	(dolist (symbol-info (cdr (assoc :external-symbols package-info)))
-	  (insert (propertize (prin1-to-string (cdr (assoc :type symbol-info))) 'face 'slime-helpful-type))
+	  (insert (propertize (prin1-to-string (cdr (assoc :type symbol-info))) 'face 'slime-help-type))
           (insert " ")
 	  (insert-button (princ (cdr (assoc :name symbol-info)))
 			 'action (lambda (btn)
-				   (slime-helpful-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
+				   (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
 			 'follow-link t
 			 'help-echo "Describe symbol")
           (newline)
@@ -118,17 +118,17 @@
 	(pop-to-buffer buffer)
 	nil))))
 
-;;(slime-helpful-package "ALEXANDRIA")
+;;(slime-help-package "ALEXANDRIA")
 
-(defun slime-helpful-function (symbol-name)
+(defun slime-help-function (symbol-name)
   (interactive (list (slime-read-symbol-name "Describe symbol's function: ")))
   (when (not symbol-name)
     (error "No symbol given"))
   
-  (let ((buffer-name (format "*slime-helpful: %s function*" symbol-name)))
+  (let ((buffer-name (format "*slime-help: %s function*" symbol-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
-      (return-from slime-helpful-function))
+      (return-from slime-help-function))
     
     (let* ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,symbol-name))))
 	   (package-name (cdr (assoc :package symbol-info)))
@@ -139,7 +139,7 @@
 	(insert (format "This is a FUNCTION in package "))
 	(insert-button package-name
                        'action (lambda (btn)
-				 (slime-helpful-package package-name))
+				 (slime-help-package package-name))
 		       'follow-link t
 		       'help-echo "Describe package")
 	(newline 2)
@@ -184,10 +184,10 @@
 	(pop-to-buffer buffer)      
 	nil))))
 
-;;(slime-helpful-function "ALEXANDRIA:FLATTEN")
-;;(slime-helpful-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
+;;(slime-help-function "ALEXANDRIA:FLATTEN")
+;;(slime-help-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
 
-;; This was copied from helpful.el
+;; This was copied from help.el
 (defun --highlight-syntax (source &optional mode)
   "Return a propertized version of SOURCE in MODE."
   (unless mode
@@ -210,8 +210,9 @@
               (setq hook-funcs (append hook-funcs funcs))))
 
           ;; Filter hooks to those that relate to highlighting, and run them.
-          (setq hook-funcs (-intersection hook-funcs helpful--highlighting-funcs))
-          (-map #'funcall hook-funcs))
+          ;;(setq hook-funcs (-intersection hook-funcs help--highlighting-funcs))
+          ;;(-map #'funcall hook-funcs)
+	  )
 
         (if (fboundp 'font-lock-ensure)
             (font-lock-ensure)
