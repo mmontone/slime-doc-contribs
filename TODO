@@ -1,4 +1,4 @@
 * Highlight variables in doc strings.
 * Create buttons for cross references in doc strings.
 * Consider adding buttons for go to source, cross referencing, dissasemble, debugging, etc. Use some buttons-mode for that, that convert some special text to buttons.
-* Parse and consider `symbol' syntax in docstrings.
+* Parse and consider `symbol' syntax in docstrings. See: https://www.emacswiki.org/emacs/DocString
