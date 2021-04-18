@@ -97,7 +97,7 @@
 	(dolist (symbol-info (cdr (assoc :external-symbols package-info)))
 	  (insert (propertize (prin1-to-string (cdr (assoc :type symbol-info))) 'face 'slime-help-type))
           (insert " ")
-	  (insert-button (princ (cdr (assoc :name symbol-info)))
+	  (insert-button (format "%s" (cdr (assoc :name symbol-info)))
 			 'action (lambda (btn)
 				   (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
 			 'follow-link t
