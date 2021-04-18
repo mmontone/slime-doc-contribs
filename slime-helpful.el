@@ -4,6 +4,7 @@
 (require 'anaphora)
 (require 'map)
 (require 'button)
+(require 'dash)
 
 (defface slime-helpful-heading
   '((t :weight bold :underline t))
@@ -142,7 +143,7 @@
 	(newline 2)
 	(insert (sh--propertize-heading "Signature"))
 	(newline)
-	(insert (propertize (cdr (assoc :args symbol-info)) 'face lisp-cl-font-lock-keywords))
+	(insert (--highlight-syntax (cdr (assoc :args symbol-info))))
 	(newline 2)
 	(render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
 	(newline 2)
@@ -182,3 +183,39 @@
 	nil))))
 
 ;;(slime-helpful-function "ALEXANDRIA:FLATTEN")
+;;(slime-helpful-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
+
+;; This was copied from helpful.el
+(defun --highlight-syntax (source &optional mode)
+  "Return a propertized version of SOURCE in MODE."
+  (unless mode
+    (setq mode #'lisp-mode))
+  (if (or
+       (< (length source) 5000)
+       (eq mode 'emacs-lisp-mode))
+      (with-temp-buffer
+        (insert source)
+
+        ;; Switch to major-mode MODE, but don't run any hooks.
+        (delay-mode-hooks (funcall mode))
+
+        ;; `delayed-mode-hooks' contains mode hooks like
+        ;; `emacs-lisp-mode-hook'. Build a list of functions that are run
+        ;; when the mode hooks run.
+        (let (hook-funcs)
+          (dolist (hook delayed-mode-hooks)
+            (let ((funcs (symbol-value hook)))
+              (setq hook-funcs (append hook-funcs funcs))))
+
+          ;; Filter hooks to those that relate to highlighting, and run them.
+          (setq hook-funcs (-intersection hook-funcs helpful--highlighting-funcs))
+          (-map #'funcall hook-funcs))
+
+        (if (fboundp 'font-lock-ensure)
+            (font-lock-ensure)
+          (with-no-warnings
+            (font-lock-fontify-buffer)))
+        (buffer-string))
+    ;; SOURCE was too long to highlight in a reasonable amount of
+    ;; time.
+    source))
