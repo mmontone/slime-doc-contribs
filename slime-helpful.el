@@ -5,6 +5,8 @@
 (require 'map)
 (require 'button)
 (require 'dash)
+(require 'lisp-mode)
+(require 'slime)
 
 (defface slime-helpful-heading
   '((t :weight bold :underline t))
