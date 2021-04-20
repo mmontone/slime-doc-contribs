@@ -76,56 +76,56 @@
   (interactive (list (slime-read-package-name "Describe package: ")))
   (when (not package-name)
     (error "No package name given"))
-  
+
   (let ((buffer-name (format "*slime-help: %s package*" package-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
       (return-from slime-help-package))
     (let* ((package-info (slime-eval `(swank::read-elisp-package-info ,package-name)))
-	   (buffer (get-buffer-create buffer-name)))
+           (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
-	(insert (sh--propertize-heading (upcase package-name)))
-	(newline 2)
-	(insert (format "This is a Common Lisp package with %d external symbols" (length (cdr (assoc :external-symbols package-info)))))
-	(newline 2)
-	(when (cdr (assoc :documentation package-info))
+        (insert (sh--propertize-heading (upcase package-name)))
+        (newline 2)
+        (insert (format "This is a Common Lisp package with %d external symbols" (length (cdr (assoc :external-symbols package-info)))))
+        (newline 2)
+        (when (cdr (assoc :documentation package-info))
           (insert (cdr (assoc :documentation package-info)))
-	  (newline 2))
+          (newline 2))
 
-	(cl-flet ((goto-source (btn)
+        (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window package-name)))
           (insert-button "Source"
-			 'action (function goto-source)
-			 'follow-link t
-			 'help-echo "Go to package source code"))
-	(newline 2)
-	
-	(insert (sh--propertize-heading "Exported symbols"))
-	(newline 2)
-	(insert (make-string 80 ?\u2500))
-	(dolist (symbol-info (cdr (assoc :external-symbols package-info)))
-	  (insert (propertize (prin1-to-string (cdr (assoc :type symbol-info))) 'face 'slime-help-type))
+                         'action (function goto-source)
+                         'follow-link t
+                         'help-echo "Go to package source code"))
+        (newline 2)
+
+        (insert (sh--propertize-heading "Exported symbols"))
+        (newline 2)
+        (insert (make-string 80 ?\u2500))
+        (dolist (symbol-info (cdr (assoc :external-symbols package-info)))
+          (insert (propertize (prin1-to-string (cdr (assoc :type symbol-info))) 'face 'slime-help-type))
           (insert " ")
-	  (insert-button (format "%s" (cdr (assoc :name symbol-info)))
-			 'action (lambda (btn)
-				   (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
-			 'follow-link t
-			 'help-echo "Describe symbol")
+          (insert-button (format "%s" (cdr (assoc :name symbol-info)))
+                         'action (lambda (btn)
+                                   (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
+                         'follow-link t
+                         'help-echo "Describe symbol")
           (newline)
-	  (if (cdr (assoc :documentation symbol-info))
-	      ;;(insert (cdr (assoc :documentation symbol-info)))
-	      (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
-	    (insert "Not documented"))
-	  (newline)
-	  (insert (make-string 80 ?\u2500))
-	  (newline))
-	(setq buffer-read-only t)
-	(local-set-key "q" 'kill-current-buffer)
-	(buffer-disable-undo)
-	(set (make-local-variable 'kill-buffer-query-functions) nil)
-	(goto-char 0)
-	(pop-to-buffer buffer)
-	nil))))
+          (if (cdr (assoc :documentation symbol-info))
+              ;;(insert (cdr (assoc :documentation symbol-info)))
+              (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
+            (insert "Not documented"))
+          (newline)
+          (insert (make-string 80 ?\u2500))
+          (newline))
+        (setq buffer-read-only t)
+        (local-set-key "q" 'kill-current-buffer)
+        (buffer-disable-undo)
+        (set (make-local-variable 'kill-buffer-query-functions) nil)
+        (goto-char 0)
+        (pop-to-buffer buffer)
+        nil))))
 
 ;;(slime-help-package "ALEXANDRIA")
 
@@ -133,65 +133,65 @@
   (interactive (list (slime-read-symbol-name "Describe symbol's function: ")))
   (when (not symbol-name)
     (error "No symbol given"))
-  
+
   (let ((buffer-name (format "*slime-help: %s function*" symbol-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
       (return-from slime-help-function))
-    
+
     (let* ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,symbol-name))))
-	   (package-name (cdr (assoc :package symbol-info)))
-	   (buffer (get-buffer-create buffer-name)))
+           (package-name (cdr (assoc :package symbol-info)))
+           (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
-	(insert (sh--propertize-heading (cdr (assoc :name symbol-info))))
-	(newline 2)
-	(insert (format "This is a FUNCTION in package "))
-	(insert-button package-name
+        (insert (sh--propertize-heading (cdr (assoc :name symbol-info))))
+        (newline 2)
+        (insert (format "This is a FUNCTION in package "))
+        (insert-button package-name
                        'action (lambda (btn)
-				 (slime-help-package package-name))
-		       'follow-link t
-		       'help-echo "Describe package")
-	(newline 2)
-	(insert (sh--propertize-heading "Signature"))
-	(newline)
-	(insert (--highlight-syntax (cdr (assoc :args symbol-info))))
-	(newline 2)
-	(render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
-	(newline 2)
-	(cl-flet ((goto-source (btn)
+                                 (slime-help-package package-name))
+                       'follow-link t
+                       'help-echo "Describe package")
+        (newline 2)
+        (insert (sh--propertize-heading "Signature"))
+        (newline)
+        (insert (--highlight-syntax (cdr (assoc :args symbol-info))))
+        (newline 2)
+        (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
+        (newline 2)
+        (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
-			 'action (function goto-source)
-			 'follow-link t
-			 'help-echo "Go to definition source code"))
-	(insert " ")
-	(cl-flet ((browse-references (btn)
+                         'action (function goto-source)
+                         'follow-link t
+                         'help-echo "Go to definition source code"))
+        (insert " ")
+        (cl-flet ((browse-references (btn)
                                      (slime-who-calls (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "References"
-			 'action (function browse-references)
-			 'follow-link t
-			 'help-echo "Browse references"))
-	(insert " ")
-	(cl-flet ((disassemble-function (btn)
-					(slime-disassemble-symbol (prin1-to-string (cdr (assoc :symbol symbol-info))))))
-	  (insert-button "Disassemble"
-			 'action (function disassemble-function)
-			 'follow-link t
-			 'help-echo "Disassemble function"))
-	(insert " ")
-	(cl-flet ((lookup-in-info (btn)
+                         'action (function browse-references)
+                         'follow-link t
+                         'help-echo "Browse references"))
+        (insert " ")
+        (cl-flet ((disassemble-function (btn)
+                                        (slime-disassemble-symbol (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+          (insert-button "Disassemble"
+                         'action (function disassemble-function)
+                         'follow-link t
+                         'help-echo "Disassemble function"))
+        (insert " ")
+        (cl-flet ((lookup-in-info (btn)
                                   (info-apropos (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Lookup in manual"
-			 'action (function lookup-in-info)
-			 'help-echo "Search for this in Info manuals"
-			 'follow-link t))
-	(setq buffer-read-only t)
-	(local-set-key "q" 'kill-current-buffer)
-	(buffer-disable-undo)
-	(set (make-local-variable 'kill-buffer-query-functions) nil)
-	(goto-char 0)
-	(pop-to-buffer buffer)      
-	nil))))
+                         'action (function lookup-in-info)
+                         'help-echo "Search for this in Info manuals"
+                         'follow-link t))
+        (setq buffer-read-only t)
+        (local-set-key "q" 'kill-current-buffer)
+        (buffer-disable-undo)
+        (set (make-local-variable 'kill-buffer-query-functions) nil)
+        (goto-char 0)
+        (pop-to-buffer buffer)
+        nil))))
 
 ;;(slime-help-function "ALEXANDRIA:FLATTEN")
 ;;(slime-help-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
@@ -221,7 +221,7 @@
           ;; Filter hooks to those that relate to highlighting, and run them.
           ;;(setq hook-funcs (-intersection hook-funcs help--highlighting-funcs))
           ;;(-map #'funcall hook-funcs)
-	  )
+          )
 
         (if (fboundp 'font-lock-ensure)
             (font-lock-ensure)
@@ -233,7 +233,8 @@
     source))
 
 (defun slime-help-system (system-name)
-  (interactive (list (slime-read-system-name "Describe system: ")))
+
+  (interactive (list (slime-read-system-name "Describe system")))
   (when (not system-name)
     (error "No system name given"))
 
@@ -241,64 +242,64 @@
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
       (return-from slime-help-system))
-    
-    (let* ((system-info (slime-eval `(swank::read-elisp-system-info ,system-name)))
-	   (buffer (get-buffer-create buffer-name)))
-      (with-current-buffer buffer
-	(insert (sh--propertize-heading (upcase system-name)))
-	(newline 2)
-	(insert (format "This is a Common Lisp ASDF system with %d dependencies" (length (cdr (assoc :dependencies system-info)))))
-	(newline 2)
-	(when (cdr (assoc :documentation system-info))
-          (insert (cdr (assoc :documentation system-info)))
-	  (newline 2))      
-	(insert (sh--propertize-heading "Dependencies"))
-	(newline 2)
-	(if (zerop (length (cdr (assoc :dependencies system-info))))
-	    (insert "It has no dependencies")
-	  ;; else
-	(dolist (dependency (cdr (assoc :dependencies system-info)))
-	  (insert "* ")
-	  (insert-button dependency
-			 'action (lambda (btn)
-				   (slime-help-system dependency))
-			 'follow-link t
-			 'help-echo "Describe system")
-	  (newline))
-	
-	(newline)
 
-	(cl-flet ((open-system (btn)
+    (let* ((system-info (slime-eval `(swank::read-elisp-system-info ,system-name)))
+           (buffer (get-buffer-create buffer-name)))
+      (with-current-buffer buffer
+        (insert (sh--propertize-heading (upcase system-name)))
+        (newline 2)
+        (insert (format "This is a Common Lisp ASDF system with %d dependencies" (length (cdr (assoc :dependencies system-info)))))
+        (newline 2)
+        (when (cdr (assoc :documentation system-info))
+          (insert (cdr (assoc :documentation system-info)))
+          (newline 2))
+        (insert (sh--propertize-heading "Dependencies"))
+        (newline 2)
+        (if (zerop (length (cdr (assoc :dependencies system-info))))
+            (insert "It has no dependencies")
+          ;; else
+          (dolist (dependency (cdr (assoc :dependencies system-info)))
+            (insert "* ")
+            (insert-button dependency
+                           'action (lambda (btn)
+                                     (slime-help-system dependency))
+                           'follow-link t
+                           'help-echo "Describe system")
+            (newline)))
+
+        (newline)
+
+        (cl-flet ((open-system (btn)
                                (slime-open-system system-name)))
           (insert-button "Open"
-			 'action (function open-system)
-			 'follow-link t
-			 'help-echo "Open system"))
+                         'action (function open-system)
+                         'follow-link t
+                         'help-echo "Open system"))
 
-	(insert " ")
-	
-	(cl-flet ((browse-system (btn)
-				 (slime-browse-system system-name)))
+        (insert " ")
+
+        (cl-flet ((browse-system (btn)
+                                 (slime-browse-system system-name)))
           (insert-button "Browse"
-			 'action (function browse-system)
-			 'follow-link t
-			 'help-echo "Browse system"))
+                         'action (function browse-system)
+                         'follow-link t
+                         'help-echo "Browse system"))
 
-	(insert " ")
+        (insert " ")
 
-	(cl-flet ((load-system (btn)
-				 (slime-load-system system-name)))
+        (cl-flet ((load-system (btn)
+                               (slime-load-system system-name)))
           (insert-button "Load"
-			 'action (function load-system)
-			 'follow-link t
-			 'help-echo "Load system")))
-	
-	(newline)
+                         'action (function load-system)
+                         'follow-link t
+                         'help-echo "Load system")))
 
-	(setq buffer-read-only t)
-	(local-set-key "q" 'kill-current-buffer)
-	(buffer-disable-undo)
-	(set (make-local-variable 'kill-buffer-query-functions) nil)
-	(goto-char 0)
-	(pop-to-buffer buffer)
-	nil))))
+      (newline)
+
+      (setq buffer-read-only t)
+      (local-set-key "q" 'kill-current-buffer)
+      (buffer-disable-undo)
+      (set (make-local-variable 'kill-buffer-query-functions) nil)
+      (goto-char 0)
+      (pop-to-buffer buffer)
+      nil)))
