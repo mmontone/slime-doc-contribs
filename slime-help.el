@@ -90,7 +90,16 @@
 	(newline 2)
 	(when (cdr (assoc :documentation package-info))
           (insert (cdr (assoc :documentation package-info)))
-	  (newline 2))      
+	  (newline 2))
+
+	(cl-flet ((goto-source (btn)
+                               (slime-edit-definition-other-window package-name)))
+          (insert-button "Source"
+			 'action (function goto-source)
+			 'follow-link t
+			 'help-echo "Go to package source code"))
+	(newline 2)
+	
 	(insert (sh--propertize-heading "Exported symbols"))
 	(newline 2)
 	(insert (make-string 80 ?\u2500))
@@ -222,3 +231,74 @@
     ;; SOURCE was too long to highlight in a reasonable amount of
     ;; time.
     source))
+
+(defun slime-help-system (system-name)
+  (interactive (list (slime-read-system-name "Describe system: ")))
+  (when (not system-name)
+    (error "No system name given"))
+
+  (let ((buffer-name (format "*slime-help: %s system*" system-name)))
+    (when (get-buffer buffer-name)
+      (pop-to-buffer buffer-name)
+      (return-from slime-help-system))
+    
+    (let* ((system-info (slime-eval `(swank::read-elisp-system-info ,system-name)))
+	   (buffer (get-buffer-create buffer-name)))
+      (with-current-buffer buffer
+	(insert (sh--propertize-heading (upcase system-name)))
+	(newline 2)
+	(insert (format "This is a Common Lisp ASDF system with %d dependencies" (length (cdr (assoc :dependencies system-info)))))
+	(newline 2)
+	(when (cdr (assoc :documentation system-info))
+          (insert (cdr (assoc :documentation system-info)))
+	  (newline 2))      
+	(insert (sh--propertize-heading "Dependencies"))
+	(newline 2)
+	(if (zerop (length (cdr (assoc :dependencies system-info))))
+	    (insert "It has no dependencies")
+	  ;; else
+	(dolist (dependency (cdr (assoc :dependencies system-info)))
+	  (insert "* ")
+	  (insert-button dependency
+			 'action (lambda (btn)
+				   (slime-help-system dependency))
+			 'follow-link t
+			 'help-echo "Describe system")
+	  (newline))
+	
+	(newline)
+
+	(cl-flet ((open-system (btn)
+                               (slime-open-system system-name)))
+          (insert-button "Open"
+			 'action (function open-system)
+			 'follow-link t
+			 'help-echo "Open system"))
+
+	(insert " ")
+	
+	(cl-flet ((browse-system (btn)
+				 (slime-browse-system system-name)))
+          (insert-button "Browse"
+			 'action (function browse-system)
+			 'follow-link t
+			 'help-echo "Browse system"))
+
+	(insert " ")
+
+	(cl-flet ((load-system (btn)
+				 (slime-load-system system-name)))
+          (insert-button "Load"
+			 'action (function load-system)
+			 'follow-link t
+			 'help-echo "Load system")))
+	
+	(newline)
+
+	(setq buffer-read-only t)
+	(local-set-key "q" 'kill-current-buffer)
+	(buffer-disable-undo)
+	(set (make-local-variable 'kill-buffer-query-functions) nil)
+	(goto-char 0)
+	(pop-to-buffer buffer)
+	nil))))

@@ -1,6 +1,8 @@
+(require :asdf)
 (require :closer-mop)
 (require :alexandria)
 (require :cl-fad)
+(require :swank)
 
 (in-package :swank)
 
@@ -784,5 +786,12 @@ is replaced with replacement."
 	  (cons :name package-name)
 	  (cons :documentation (documentation package t))
 	  (cons :external-symbols symbol-infos))))
+
+(defun read-elisp-system-info (system-name)
+  (let ((system (asdf:find-system system-name)))
+    (list (cons :type :system)
+	  (cons :name system-name)
+	  (cons :documentation (asdf:system-description system))
+	  (cons :dependencies (asdf:system-depends-on system)))))
 
 (provide :swank-info)
