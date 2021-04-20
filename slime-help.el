@@ -292,14 +292,14 @@
           (insert-button "Load"
                          'action (function load-system)
                          'follow-link t
-                         'help-echo "Load system")))
+                         'help-echo "Load system"))
 
-      (newline)
+	(newline)
 
-      (setq buffer-read-only t)
-      (local-set-key "q" 'kill-current-buffer)
-      (buffer-disable-undo)
-      (set (make-local-variable 'kill-buffer-query-functions) nil)
-      (goto-char 0)
-      (pop-to-buffer buffer)
-      nil)))
+	(setq buffer-read-only t)
+	(local-set-key "q" 'kill-current-buffer)
+	(buffer-disable-undo)
+	(set (make-local-variable 'kill-buffer-query-functions) nil)
+	(goto-char 0)
+	(pop-to-buffer buffer)
+	nil))))
