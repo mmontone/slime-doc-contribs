@@ -779,7 +779,7 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
     (when (aget info :documentation)
       (push (cons :parsed-documentation
                   (parse-docstring (aget info :documentation)
-				   (when (member (aget info :type) '(:function :macro :generic-function))
+				   (when (member (aget info :type) '(:function :generic-function))
 				     (list-lambda-list-args (read-from-string (aget info :args))))))
             info))
     (push (cons :symbol (cdr (assoc :name info))) info)
