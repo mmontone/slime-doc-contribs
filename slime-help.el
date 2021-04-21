@@ -98,7 +98,7 @@
   (interactive (list (slime-read-symbol-name "Describe symbol: ")))
   (when (not symbol-name)
     (error "No symbol given"))
-  (let ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,symbol-name)))))
+  (let ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,(slime-qualify-cl-symbol-name symbol-name))))))
     (case (cdr (assoc :type symbol-info))
       (:function (slime-help-function symbol-name))
       (:package (slime-help-package symbol-name))
@@ -179,7 +179,7 @@
       (pop-to-buffer buffer-name)
       (return-from slime-help-function))
 
-    (let* ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,symbol-name))))
+    (let* ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,(slime-qualify-cl-symbol-name symbol-name)))))
            (package-name (cdr (assoc :package symbol-info)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
