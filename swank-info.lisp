@@ -728,7 +728,9 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
   (let ((words (split-string-with-delimiter
                 docstring
                 (lambda (char)
-                  (member char '(#\space #\newline #\tab #\.)))))
+		  (not 
+		   (or (alphanumericp char)
+		       (find char "+-*/@$%^&_=<>~.?![]{}"))))))
         (string-test (if case-sensitive
                          'string=
                          'equalp)))
