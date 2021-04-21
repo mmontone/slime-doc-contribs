@@ -702,25 +702,33 @@ is replaced with replacement."
           (vector-push-extend x current-word)))
     (nreverse words)))
 
+;; TODO: fix:
+;; (split-string-with-delimiter
+;;                "split-dot."
+;;                (lambda (char)
+;;                  (member char '(#\space #\newline #\tab #\.))))
+
+
 (defun list-lambda-list-args (lambda-list)
+  "Takes a LAMBDA-LIST and returns the list of all the argument names."
   (multiple-value-bind (required optional rest keys aok aux keyp)
       (alexandria:parse-ordinary-lambda-list lambda-list)
     (concatenate 'list
                  required
                  (mapcar 'car optional)
-                 rest
+                 (list rest)
                  (mapcar 'cadar keys)
-                 aux)))
-
-(defun list-package-info-args (package-info)
-  (list-lambda-list-args
-   (read-from-string (aget package-info :args))))
+                 (list aux))))
 
 (defun parse-docstring (docstring bound-args &key case-sensitive (package *package*))
+  "Parse a docstring.
+BOUND-ARGS: when parsing a function/macro/generic function docstring, BOUND-ARGS contains the names of the arguments. That means the function arguments are detected by the parser.
+CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when in uppercase.
+"
   (let ((words (split-string-with-delimiter
                 docstring
                 (lambda (char)
-                  (member char '(#\space #\newline #\tab)))))
+                  (member char '(#\space #\newline #\tab #\.)))))
         (string-test (if case-sensitive
                          'string=
                          'equalp)))
@@ -729,9 +737,9 @@ is replaced with replacement."
            collect (cond
                      ((member (string-upcase word) (mapcar 'symbol-name bound-args) :test string-test)
                       (list :arg word))
-                     ((fboundp (intern (string-upcase word) package))
+                     ((fboundp (intern word package))
                       (list :fn word))
-                     ((boundp (intern (string-upcase word) package))
+                     ((boundp (intern word package))
                       (list :var word))
                      ((eql (aref word 0) #\:)
                       (list :key word))
@@ -770,7 +778,9 @@ is replaced with replacement."
             (package-name (aget info :package))))
     (when (aget info :documentation)
       (push (cons :parsed-documentation
-                  (parse-docstring (aget info :documentation) nil))
+                  (parse-docstring (aget info :documentation)
+				   (when (member (aget info :type) '(:function :macro :generic-function))
+				     (list-lambda-list-args (read-from-string (aget info :args))))))
             info))
     (push (cons :symbol (cdr (assoc :name info))) info)
     (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))

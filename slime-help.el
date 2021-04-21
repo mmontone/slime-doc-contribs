@@ -32,8 +32,13 @@
   "Slime help face for headings"
   :group 'slime-help-faces)
 
+(defface slime-help-argument
+  '((t :foreground "darkorange"))
+  "Face for variables in Slime help"
+  :group 'slime-help-faces)
+
 (defface slime-help-variable
-  '((t :foreground "orange"))
+  '((t :foreground "darkgreen"))
   "Face for variables in Slime help"
   :group 'slime-help-faces)
 
@@ -76,7 +81,7 @@
     (cond
      ((stringp word) (insert word))
      ((and (listp word) (eql (first word) :arg))
-      (insert (propertize (second word) 'face 'highlight)))
+      (insert (propertize (second word) 'face 'slime-help-argument)))
      ((and (listp word) (eql (first word) :fn))
       (insert-button (second word)
 		     'action (lambda (btn)
@@ -84,9 +89,9 @@
 		     'follow-link t
 		     'help-echo "Describe function"))
      ((and (listp word) (eql (first word) :key))
-      (insert (propertize (second word) 'face 'underline)))
+      (insert (propertize (second word) 'face 'slime-help-keyword)))
      ((and (listp word) (eql (first word) :var))
-      (insert (propertize (second word) 'face 'highlight)))
+      (insert (propertize (second word) 'face 'slime-help-variable)))
      (t (error "Don't know how to render")))))
 
 (defun slime-help-symbol (symbol-name)
