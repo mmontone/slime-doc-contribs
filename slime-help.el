@@ -8,9 +8,6 @@
 (require 'lisp-mode)
 (require 'slime)
 
-(defun slime-help-init ()
-  )
-
 (defface slime-help-heading
   '((t :weight bold :underline t))
   "Slime help face for headings"
@@ -309,6 +306,20 @@
 	(pop-to-buffer buffer)
 	nil))))
 
+(defun slime-help-apropos ()
+  (debug "TODO"))
+
+(defun slime-help-apropos-all ()
+  (debug "TODOE"))
+
+(defun slime-help-setup-key-bindings ()
+  (define-key slime-doc-map "a" 'slime-help-apropos)
+  (define-key slime-doc-map "z" 'slime-help-apropos-all)
+  (define-key slime-doc-map "d" 'slime-help-symbol)
+  (define-key slime-doc-map "f" 'slime-help-function)
+  (define-key slime-doc-map "p" 'slime-help-package)
+  (define-key slime-doc-map "s" 'slime-help-system))
+
 (define-slime-contrib slime-help
   "Augmented help"
   (:authors "Mariano Montone")
@@ -316,7 +327,11 @@
   ;;(:slime-dependencies )
   (:swank-dependencies swank-help)
   (:on-load
-   ;; setup key bindings??
-   ))
+   ;; setup key bindings
+   (slime-help-setup-key-bindings)))
+
+(defun slime-help-init ()
+  (slime-help-setup-key-bindings))
+
 
 (provide 'slime-help)
