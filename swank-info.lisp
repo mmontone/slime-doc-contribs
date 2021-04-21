@@ -794,4 +794,5 @@ is replaced with replacement."
 	  (cons :documentation (asdf:system-description system))
 	  (cons :dependencies (asdf:system-depends-on system)))))
 
-(provide :swank-info)
+;;(provide :swank-info)
+(provide :swank-help)

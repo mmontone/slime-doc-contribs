@@ -8,6 +8,9 @@
 (require 'lisp-mode)
 (require 'slime)
 
+(defun slime-help-init ()
+  )
+
 (defface slime-help-heading
   '((t :weight bold :underline t))
   "Slime help face for headings"
@@ -68,7 +71,7 @@
 
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
 
-(defun kill-current-buffer ()
+(defun slime-help--kill-current-buffer ()
   (interactive)
   (kill-buffer (current-buffer)))
 
@@ -120,7 +123,8 @@
           (insert (make-string 80 ?\u2500))
           (newline))
         (setq buffer-read-only t)
-        (local-set-key "q" 'kill-current-buffer)
+        (local-set-key "q" 'slime-help--kill-current-buffer)
+	(local-set-key "Q" 'slime-help--kill-all-help-buffers)
         (buffer-disable-undo)
         (set (make-local-variable 'kill-buffer-query-functions) nil)
         (goto-char 0)
@@ -186,7 +190,8 @@
                          'help-echo "Search for this in Info manuals"
                          'follow-link t))
         (setq buffer-read-only t)
-        (local-set-key "q" 'kill-current-buffer)
+        (local-set-key "q" 'slime-help--kill-current-buffer)
+	(local-set-key "Q" 'slime-help--kill-all-help-buffers)
         (buffer-disable-undo)
         (set (make-local-variable 'kill-buffer-query-functions) nil)
         (goto-char 0)
@@ -297,9 +302,21 @@
 	(newline)
 
 	(setq buffer-read-only t)
-	(local-set-key "q" 'kill-current-buffer)
+	(local-set-key "q" 'slime-help--kill-current-buffer)
 	(buffer-disable-undo)
 	(set (make-local-variable 'kill-buffer-query-functions) nil)
 	(goto-char 0)
 	(pop-to-buffer buffer)
 	nil))))
+
+(define-slime-contrib slime-help
+  "Augmented help"
+  (:authors "Mariano Montone")
+  (:license "GPL")
+  ;;(:slime-dependencies )
+  (:swank-dependencies swank-help)
+  (:on-load
+   ;; setup key bindings??
+   ))
+
+(provide 'slime-help)
