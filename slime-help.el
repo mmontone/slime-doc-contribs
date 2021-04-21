@@ -78,7 +78,11 @@
      ((and (listp word) (eql (first word) :arg))
       (insert (propertize (second word) 'face 'highlight)))
      ((and (listp word) (eql (first word) :fn))
-      (insert (propertize (second word) 'face 'link)))
+      (insert-button (second word)
+		     'action (lambda (btn)
+			       (slime-help-symbol (second word)))
+		     'follow-link t
+		     'help-echo "Describe function"))
      ((and (listp word) (eql (first word) :key))
       (insert (propertize (second word) 'face 'underline)))
      ((and (listp word) (eql (first word) :var))
