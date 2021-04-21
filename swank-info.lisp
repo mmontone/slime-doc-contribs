@@ -85,9 +85,9 @@ the CADR of the list."
 
 (defun load-type-info (symbol)
   (list (cons :name symbol)
-	(cons :package (symbol-package symbol))
-	(cons :type :type)
-	(cons :documentation (documentation symbol 'type))))
+        (cons :package (symbol-package symbol))
+        (cons :type :type)
+        (cons :documentation (documentation symbol 'type))))
 
 (defun load-function-info (symbol)
   (list (cons :name symbol)
@@ -681,33 +681,28 @@ is replaced with replacement."
               :initial-contents s
               :element-type (array-element-type s)))
 
-(defun split-string-with-delimiter (string delimiter)
-  "Splits a string into a list of strings, with the delimiter still
-  in the resulting list."
-  (let ((words nil)
-        (current-word (make-adjustable-string ""))
-        (predicate (cond
+(defun split-string-with-delimiter (string delimiter
+                                    &key (keep-delimiters t)
+                                    &aux (l (length string)))
+  (let ((predicate (cond
                      ((characterp delimiter) (lambda (char) (eql char delimiter)))
                      ((listp delimiter) (lambda (char) (member char delimiter)))
                      ((functionp delimiter) delimiter)
                      (t (error "Invalid delimiter")))))
-    (do* ((i 0 (+ i 1))
-          (x (char string i) (char string i)))
-         ((>= (+ i 1) (length string)) (progn (vector-push-extend x current-word) (push current-word words)))
-      (if (funcall predicate x)
-          (unless (string= "" current-word)
-            (push current-word words)
-            (push (string x) words)
-            (setf current-word (make-adjustable-string "")))
-          (vector-push-extend x current-word)))
-    (nreverse words)))
+    (loop for start = 0 then (1+ pos)
+          for pos   = (position-if predicate string :start start)
 
-;; TODO: fix:
-;; (split-string-with-delimiter
-;;                "split-dot."
-;;                (lambda (char)
-;;                  (member char '(#\space #\newline #\tab #\.))))
+	  ;; no more delimiter found
+          when (and (null pos) (not (= start l)))
+            collect (subseq string start)
 
+	  ;; while delimiter found
+          while pos
+
+	  ;;  some content found
+          when (> pos start) collect (subseq string start pos)
+	    ;;  optionally keep delimiter
+            when keep-delimiters collect (string (aref string pos)))))
 
 (defun list-lambda-list-args (lambda-list)
   "Takes a LAMBDA-LIST and returns the list of all the argument names."
@@ -728,9 +723,9 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
   (let ((words (split-string-with-delimiter
                 docstring
                 (lambda (char)
-		  (not 
-		   (or (alphanumericp char)
-		       (find char "+-*/@$%^&_=<>~.?![]{}"))))))
+                  (not
+                   (or (alphanumericp char)
+                       (find char "+-*/@$%^&_=<>~.?![]{}"))))))
         (string-test (if case-sensitive
                          'string=
                          'equalp)))
@@ -753,7 +748,7 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
 ;; (parse-docstring "adsfa adf
 ;; asdfasd" nil)
 ;;       (parse-docstring "lala :lolo" nil)
-;;       (parse-docstring "*communication-style*" nil)      
+;;       (parse-docstring "*communication-style*" nil)
 
 (defun render-parsed-docstring (docstring stream)
   (loop for word in docstring
@@ -781,8 +776,8 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
     (when (aget info :documentation)
       (push (cons :parsed-documentation
                   (parse-docstring (aget info :documentation)
-				   (when (member (aget info :type) '(:function :generic-function))
-				     (list-lambda-list-args (read-from-string (aget info :args))))))
+                                   (when (member (aget info :type) '(:function :generic-function))
+                                     (list-lambda-list-args (read-from-string (aget info :args))))))
             info))
     (push (cons :symbol (cdr (assoc :name info))) info)
     (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))
@@ -790,21 +785,21 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
 
 (defun read-elisp-package-info (package-name)
   (let ((package (or (find-package package-name)
-		     (error "Package not found: ~a" package-name)))
-	symbol-infos)
+                     (error "Package not found: ~a" package-name)))
+        symbol-infos)
     (do-external-symbols (symbol package)
       (push (read-elisp-symbol-info symbol) symbol-infos))
     (list (cons :type :package)
-	  (cons :name package-name)
-	  (cons :documentation (documentation package t))
-	  (cons :external-symbols symbol-infos))))
+          (cons :name package-name)
+          (cons :documentation (documentation package t))
+          (cons :external-symbols symbol-infos))))
 
 (defun read-elisp-system-info (system-name)
   (let ((system (asdf:find-system system-name)))
     (list (cons :type :system)
-	  (cons :name system-name)
-	  (cons :documentation (asdf:system-description system))
-	  (cons :dependencies (asdf:system-depends-on system)))))
+          (cons :name system-name)
+          (cons :documentation (asdf:system-description system))
+          (cons :dependencies (asdf:system-depends-on system)))))
 
 ;;(provide :swank-info)
 (provide :swank-help)
