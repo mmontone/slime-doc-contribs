@@ -8,8 +8,27 @@
 (require 'lisp-mode)
 (require 'slime)
 
-(defface slime-help-heading
-  '((t :weight bold :underline t))
+(defface slime-help-heading-1
+  '((t :weight bold
+       :height 1.5
+       ;;:underline t
+       ))
+  "Slime help face for headings"
+  :group 'slime-help-faces)
+
+(defface slime-help-heading-2
+  '((t :weight bold
+       :height 1.3
+       ;;:underline t
+       ))
+  "Slime help face for headings"
+  :group 'slime-help-faces)
+
+(defface slime-help-heading-3
+  '((t :weight bold
+       :height 1.1
+       ;;:underline t
+       ))
   "Slime help face for headings"
   :group 'slime-help-faces)
 
@@ -27,6 +46,19 @@
   '((t :foreground "purple"))
   "Face for type in Slime help"
   :group 'slime-help-faces)
+
+(defun slime-help--heading-1 (text)
+  (propertize text 'face 'slime-help-heading-1))
+
+(defun slime-help--heading-2 (text)
+  (propertize text 'face 'slime-help-heading-2))
+
+(defun slime-help--heading-3 (text)
+  (propertize text 'face 'slime-help-heading-3))
+
+(defun slime-help--horizontal-line (&rest width)
+  (make-string (or width 80) ?\u2500))
+
 
 ;; (let ((buffer (get-buffer-create "*slime-help*")))
 ;;   (with-current-buffer buffer
@@ -52,9 +84,6 @@
      ((and (listp word) (eql (first word) :var))
       (insert (propertize (second word) 'face 'highlight)))
      (t (error "Don't know how to render")))))
-
-(defun sh--propertize-heading (text)
-  (propertize text 'face 'slime-help-heading))
 
 (defun slime-help-symbol (symbol-name)
   (interactive (list (slime-read-symbol-name "Describe symbol: ")))
@@ -84,7 +113,7 @@
     (let* ((package-info (slime-eval `(swank::read-elisp-package-info ,package-name)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
-        (insert (sh--propertize-heading (upcase package-name)))
+        (insert (slime-help--heading-1 (upcase (string-trim package-name))))
         (newline 2)
         (insert (format "This is a Common Lisp package with %d external symbols" (length (cdr (assoc :external-symbols package-info)))))
         (newline 2)
@@ -100,11 +129,12 @@
                          'help-echo "Go to package source code"))
         (newline 2)
 
-        (insert (sh--propertize-heading "Exported symbols"))
+        (insert (slime-help--heading-2 "Exported symbols"))
         (newline 2)
-        (insert (make-string 80 ?\u2500))
+        (insert (slime-help--horizontal-line))
+	(newline)
         (dolist (symbol-info (cdr (assoc :external-symbols package-info)))
-          (insert (propertize (prin1-to-string (cdr (assoc :type symbol-info))) 'face 'slime-help-type))
+          (insert (propertize (subseq (symbol-name (cdr (assoc :type symbol-info))) 1) 'face 'slime-help-type))
           (insert " ")
           (insert-button (format "%s" (cdr (assoc :name symbol-info)))
                          'action (lambda (btn)
@@ -117,7 +147,7 @@
               (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
             (insert "Not documented"))
           (newline)
-          (insert (make-string 80 ?\u2500))
+          (insert (slime-help--horizontal-line))
           (newline))
         (setq buffer-read-only t)
         (local-set-key "q" 'slime-help--kill-current-buffer)
@@ -144,7 +174,7 @@
            (package-name (cdr (assoc :package symbol-info)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
-        (insert (sh--propertize-heading (cdr (assoc :name symbol-info))))
+        (insert (slime-help--heading-1 (cdr (assoc :name symbol-info))))
         (newline 2)
         (insert (format "This is a FUNCTION in package "))
         (insert-button package-name
@@ -153,7 +183,7 @@
                        'follow-link t
                        'help-echo "Describe package")
         (newline 2)
-        (insert (sh--propertize-heading "Signature"))
+        (insert (slime-help--heading-3 "Signature"))
         (newline)
         (insert (--highlight-syntax (cdr (assoc :args symbol-info))))
         (newline 2)
@@ -248,14 +278,14 @@
     (let* ((system-info (slime-eval `(swank::read-elisp-system-info ,system-name)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
-        (insert (sh--propertize-heading (upcase system-name)))
+        (insert (slime-help--heading-1 (upcase system-name)))
         (newline 2)
         (insert (format "This is a Common Lisp ASDF system with %d dependencies" (length (cdr (assoc :dependencies system-info)))))
         (newline 2)
         (when (cdr (assoc :documentation system-info))
           (insert (cdr (assoc :documentation system-info)))
           (newline 2))
-        (insert (sh--propertize-heading "Dependencies"))
+        (insert (slime-help--heading-2 "Dependencies"))
         (newline 2)
         (if (zerop (length (cdr (assoc :dependencies system-info))))
             (insert "It has no dependencies")
@@ -269,7 +299,7 @@
                            'help-echo "Describe system")
             (newline)))
 
-        (newline)
+        (newline 2)
 
         (cl-flet ((open-system (btn)
                                (slime-open-system system-name)))
@@ -305,6 +335,8 @@
 	(goto-char 0)
 	(pop-to-buffer buffer)
 	nil))))
+
+;;(slime-help-system "alexandria")
 
 (defun slime-help-apropos ()
   (debug "TODO"))
