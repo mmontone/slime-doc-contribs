@@ -65,17 +65,6 @@
   (make-string (or width 80) ?\u2500))
 
 
-;; (let ((buffer (get-buffer-create "*slime-help*")))
-;;   (with-current-buffer buffer
-;;     (insert-button
-;;      "foo"
-;;      'action (lambda (x) (find-file "~/test.py"))
-;;      'follow-link t
-;;      'help-echo "go")
-;;     (pop-to-buffer buffer)))
-
-;;(slime-eval `(swank::read-elisp-symbol-info 'alexandria:flatten))
-
 (defun render-parsed-docstring (docstring)
   (dolist (word docstring)
     (cond
