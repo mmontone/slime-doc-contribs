@@ -87,7 +87,7 @@
   (interactive (list (slime-read-symbol-name "Describe symbol: ")))
   (when (not symbol-name)
     (error "No symbol given"))
-  (let ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,(slime-qualify-cl-symbol-name symbol-name))))))
+  (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name))))))
     (case (cdr (assoc :type symbol-info))
       (:function (slime-help-function symbol-name))
       (:package (slime-help-package symbol-name))
@@ -108,7 +108,7 @@
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
       (return-from slime-help-package))
-    (let* ((package-info (slime-eval `(swank::read-elisp-package-info ,package-name)))
+    (let* ((package-info (slime-eval `(swank-help:read-emacs-package-info ,package-name)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
         (insert (slime-help--heading-1 (upcase (string-trim package-name))))
@@ -168,7 +168,7 @@
       (pop-to-buffer buffer-name)
       (return-from slime-help-function))
 
-    (let* ((symbol-info (slime-eval `(swank::read-elisp-symbol-info (swank::read-from-string ,(slime-qualify-cl-symbol-name symbol-name)))))
+    (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)))))
            (package-name (cdr (assoc :package symbol-info)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
@@ -273,7 +273,7 @@
       (pop-to-buffer buffer-name)
       (return-from slime-help-system))
 
-    (let* ((system-info (slime-eval `(swank::read-elisp-system-info ,system-name)))
+    (let* ((system-info (slime-eval `(swank-help:read-emacs-system-info ,system-name)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
         (insert (slime-help--heading-1 (upcase system-name)))

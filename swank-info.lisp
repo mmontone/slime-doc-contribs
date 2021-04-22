@@ -1,226 +1,10 @@
-(require :asdf)
-(require :closer-mop)
-(require :alexandria)
-(require :cl-fad)
-(require :swank)
+(defpackage :swank-info
+  (:use :cl :swank :def-properties))
 
-(in-package :swank)
+(in-package :swank-info)
 
 (defun aget (alist key)
   (cdr (assoc key alist :test 'equalp)))
-
-(defun read-symbol-info (symbol &key (error-if-not-successful nil))
-  (cond
-    ((fboundp symbol)
-     (load-function-info symbol))
-    ((boundp symbol)
-     (load-variable-info symbol))
-    ((safe-class-for-symbol symbol)
-     (load-class-info symbol))
-    ((type-specifier-p symbol)
-     (load-type-info symbol))
-    (t (if error-if-not-successful
-	   (error "Cannot read info of symbol: ~s" symbol)
-	   (warn "Could read info of symbol: ~s" symbol)))))
-
-(defun collect-package-info (&optional (package *package*))
-  (let (docs)
-    (do-external-symbols (symbol package)
-      (alexandria:when-let ((symbol-info (read-symbol-info symbol)))
-	(push symbol-info docs)))
-    docs))
-
-;; From docbrowser
-
-(defun nice-princ-to-string (obj)
-  (typecase obj
-    (string obj)
-    (keyword (prin1-to-string obj))
-    (t (princ-to-string obj))))
-
-#+sbcl(defmethod documentation ((slotd sb-pcl::condition-effective-slot-definition) (doc-type (eql 't)))
-        "This method definition is missing in SBCL as of 1.0.55 at least. Adding it here
-will make documentation for slots in conditions work properly."
-        (slot-value slotd 'sb-pcl::%documentation))
-
-(defun assoc-cdr (key data &key error-p)
-  "Return (CDR (ASSOC KEY DATA)). If ERROR-P is non-NIL, signal an error if KEY is
-not available is DATA."
-  (let ((v (assoc key data)))
-    (when (and error-p
-               (not v))
-      (error "~s not found in data" key))
-    (cdr v)))
-
-(defun prin1-to-string-with-package (obj package)
-  (let ((*package* package))
-    (prin1-to-string obj)))
-
-(defun format-argument-to-string (arg)
-  (etypecase arg
-    (symbol (nice-princ-to-string arg))
-    (list   (mapcar #'(lambda (entry conversion) (funcall conversion entry))
-                    arg (list #'(lambda (v)
-                                  (if (listp v)
-                                      (nice-princ-to-string (car v))
-                                      (nice-princ-to-string v)))
-                              #'prin1-to-string
-                              #'nice-princ-to-string)))))
-
-(defun load-type-info (symbol)
-  (list (cons :name symbol)
-        (cons :package (symbol-package symbol))
-        (cons :type :type)
-        (cons :documentation (documentation symbol 'type))))
-
-(defun load-function-info (symbol)
-  (list (cons :name symbol)
-        (cons :documentation (documentation symbol 'function))
-        (cons :args (let ((*print-case* :downcase)
-                          (*package* (symbol-package symbol)))
-                      #+nil(format nil "~{~a~^ ~}"
-                                   (mapcar #'format-argument-to-string (swank-backend:arglist symbol))
-                                   )
-                      (princ-to-string (swank-backend:arglist symbol))))
-        (cons :package (symbol-package symbol))
-        (cons :type (cond ((macro-function symbol) :macro)
-                          ((typep (symbol-function symbol) 'generic-function) :generic-function)
-                          (t :function)))))
-
-(defun load-variable-info (symbol)
-  (list (cons :name symbol)
-        (cons :documentation (documentation symbol 'variable))
-        (cons :boundp (boundp symbol))
-        (cons :value (when (boundp symbol) (prin1-to-string (symbol-value symbol))))
-        (cons :constant-p (constantp symbol))
-        (cons :package (symbol-package symbol))
-        (cons :type :variable)))
-
-(defun find-superclasses (class)
-  (labels ((f (classes found)
-             (if (and classes
-                      (not (eq (car classes) (find-class 'standard-object)))
-                      (not (member (car classes) found)))
-                 (f (cdr classes)
-                    (f (closer-mop:class-direct-superclasses (car classes))
-                       (cons (car classes) found)))
-                 found)))
-    (f (list class) nil)))
-
-(defun safe-class-for-symbol (symbol)
-  (handler-case
-      (find-class symbol)
-    (error nil)))
-
-(defun assoc-name (v)
-  (assoc-cdr :name v :error-p t))
-
-(defun specialise->symbol (spec)
-  (case (caar spec)
-    ((defmethod) (cadar spec))
-    #+ccl((ccl::reader-method) (cadr (assoc :method (cdar spec))))
-    (t nil)))
-
-(defun load-specialisation-info (class-name)
-  (let* ((ignored '(initialize-instance))
-         (class (if (symbolp class-name) (find-class class-name) class-name))
-         (spec (swank-backend:who-specializes class)))
-    (unless (eq spec :not-implemented)
-      (sort (loop
-              for v in spec
-              for symbol = (specialise->symbol v)
-              when (and (not (member symbol ignored))
-                        (symbol-external-p symbol (symbol-package (class-name class))))
-                collect (list (cons :name symbol)))
-            #'string< :key (alexandria:compose #'princ-to-string #'assoc-name)))))
-
-(defun %ensure-external (symbol)
-  (let ((name (cond ((symbolp symbol)
-                     symbol)
-                    ((and (listp symbol) (eq (car symbol) 'setf))
-                     (cadr symbol))
-                    (t
-                     (warn "Unknown type: ~s. Expected symbol or SETF form." symbol)
-                     nil))))
-    (when (symbol-external-p name)
-      symbol)))
-
-(defun load-accessor-info (class slot)
-  (flet ((getmethod (readerp method-list)
-           (dolist (method method-list)
-             (let ((name (closer-mop:generic-function-name (closer-mop:method-generic-function method))))
-               (when (and (eq (type-of method) (if readerp
-                                                   'closer-mop:standard-reader-method
-                                                   'closer-mop:standard-writer-method))
-                          (eq (closer-mop:slot-definition-name (closer-mop:accessor-method-slot-definition method))
-                              (closer-mop:slot-definition-name slot)))
-                 (return-from getmethod name))))))
-
-    ;; There are several different situations we want to detect:
-    ;;   1) Only a reader method: "reader FOO"
-    ;;   2) Only a writer method: "writer FOO"
-    ;;   3) Only a writer SETF method: "writer (SETF FOO)"
-    ;;   4) A reader and a SETF method: "accessor FOO"
-    ;;   5) A reader and non-SETF writer: "reader FOO, writer FOO"
-    ;;
-    ;; The return value from this function is an alist of the following form:
-    ;;
-    ;;  ((:READER . FOO-READER) (:WRITER . FOO-WRITER) (:ACCESSOR . FOO-ACCESSOR))
-    ;;
-    ;; Note that if :ACCESSOR is given, then it's guaranteed that neither
-    ;; :READER nor :WRITER will be included.
-    ;;
-    ;; We start by assigning the reader and writer methods to variables
-    (let* ((method-list (closer-mop:specializer-direct-methods class))
-           (reader (%ensure-external (getmethod t method-list)))
-           (writer (%ensure-external (getmethod nil method-list))))
-      ;; Now, detect the 5 different cases, but we coalease case 2 and 3.
-      (cond ((and reader (null writer))
-             `((:reader . ,reader)))
-            ((and (null reader) writer)
-             `((:writer . ,writer)))
-            ((and reader (listp writer) (eq (car writer) 'setf) (eq (cadr writer) reader))
-             `((:accessor . ,reader)))
-            ((and reader writer)
-             `((:reader . ,reader) (:writer . ,writer)))))))
-
-(defun load-slots (class)
-  (closer-mop:ensure-finalized class)
-  (flet ((load-slot (slot)
-           (list (cons :name (string (closer-mop:slot-definition-name slot)))
-                 (cons :documentation (swank-mop:slot-definition-documentation slot))
-                 ;; The LIST call below is because the accessor lookup is wrapped
-                 ;; in a FOR statement in the template.
-                 (cons :accessors (let ((accessor-list (load-accessor-info class slot)))
-                                    (when accessor-list
-                                      (list accessor-list)))))))
-    (mapcar #'load-slot (closer-mop:class-slots class))))
-
-(defun load-class-info (class-name)
-  (let ((cl (find-class class-name)))
-    (list (cons :name          (class-name cl))
-          (cons :documentation (documentation cl 'type))
-          (cons :slots         (load-slots cl))
-          ;; (cons :methods       (load-specialisation-info cl)) TODO: fix
-
-          (cons :type :class))))
-
-(defun %annotate-function-info (fn-info classes)
-  "Append :ACCESSORP tag if the function is present as an accessor function."
-  (loop
-    with name = (cdr (assoc :name fn-info))
-    for class-info in classes
-    do (loop
-         for slot-info in (cdr (assoc :slots class-info))
-         do (loop
-              for accessor in (cdr (assoc :accessors slot-info))
-              for accessor-sym = (cdar accessor)
-              when (or (and (symbolp accessor-sym) (eq accessor-sym name))
-                       (and (listp accessor-sym) (eq (car accessor-sym) 'setf) (eq (cadr accessor-sym) name)))
-                do (return-from %annotate-function-info (append fn-info '((:accessorp t))))))
-    finally (return fn-info)))
-
-;; docbrowser stuff ends here
 
 (defun render-texinfo-source-for-package (package-name stream)
   (flet ((fmt (str &rest args)
@@ -232,7 +16,7 @@ not available is DATA."
            (terpri stream)))
     (let* ((package (or (find-package package-name)
                         (error "Package not found: ~a" package-name)))
-           (package-info (collect-package-info package)))
+           (package-info (package-properties package)))
       (fmtln "@setfilename ~a" package-name)
       (fmtln "@settitle ~a reference" package-name)
       (ln)
@@ -335,7 +119,7 @@ not available is DATA."
       (format stream "@defun ~a ~a" (aget info :name) (aget info :args)))
   (terpri stream) (terpri stream)
   (when (aget info :documentation)
-    (let* ((arg-names (list-lambda-list-args (read-from-string (aget info :args)))))
+    (let* ((arg-names (list-lambda-list-args (aget info :arglist))))
       (render-parsed-docstring
        (parse-docstring (texinfo-escape (aget info :documentation)) arg-names)
        stream)))
@@ -363,7 +147,7 @@ not available is DATA."
       (write-string "@end defun" stream))
   (terpri stream))
 
-(defslimefun texinfo-source-for-package (package-name)
+(swank::defslimefun texinfo-source-for-package (package-name)
   (with-output-to-string (s)
     (render-texinfo-source-for-package (string-upcase package-name) s)))
 
@@ -375,7 +159,7 @@ not available is DATA."
            (terpri stream))
          (ln ()
            (terpri stream)))
-    (let* ((symbol-info (read-symbol-info symbol)))
+    (let* ((symbol-info (symbol-properties symbol)))
       (fmtln "@setfilename ~a" symbol)
       (fmtln "@settitle ~a info" symbol)
       (ln)
@@ -420,22 +204,22 @@ not available is DATA."
     (ln)
     (loop for symbol in symbols
           do
-             (render-info (read-symbol-info symbol) stream :package package)
+             (render-info (symbol-properties symbol) stream :package package)
              (ln))
     (ln)
     (fmt "@bye")))
 
-(defslimefun texinfo-source-for-symbol (symbol-name)
+(swank::defslimefun texinfo-source-for-symbol (symbol-name)
   (with-output-to-string (s)
     (render-texinfo-source-for-symbol (read-from-string symbol-name) s)))
 
-(defslimefun texinfo-source-for-apropos (name &optional external-only
-                                              case-sensitive package)
+(swank::defslimefun texinfo-source-for-apropos (name &optional external-only
+                                                     case-sensitive package)
   "Make an apropos search for Emacs. Show the result in an Info buffer."
   (let ((package (when package
-                   (or (parse-package package)
+                   (or (swank::parse-package package)
                        (error "No such package: ~S" package)))))
-    (let ((symbols (apropos-symbols name external-only case-sensitive package)))
+    (let ((symbols (swank::apropos-symbols name external-only case-sensitive package)))
       (with-output-to-string (s)
         (render-texinfo-source-for-symbols
          ;;(format nil "Apropos: ~a" name)
@@ -447,10 +231,10 @@ not available is DATA."
   (pathname
    (cadr
     (or (find :file (cdr location)
-	      :key 'car)
-	(find :buffer-and-file (cdr location)
-	      :key 'car)
-	))))
+              :key 'car)
+        (find :buffer-and-file (cdr location)
+              :key 'car)
+        ))))
 
 (defvar *package-source-locations* (make-hash-table)
   "A cache of packages source locations")
@@ -483,7 +267,7 @@ not available is DATA."
            (terpri stream))
          (ln ()
            (terpri stream)))
-    (let* ((package-info (collect-package-info package)))
+    (let* ((package-info (package-properties package)))
       (fmtln "@node ~a" (package-name package))
       (fmtln "@chapter ~a" (package-name package))
       (fmtln "This is a reference of Common Lisp package ~a" (package-name package))
@@ -654,114 +438,11 @@ is replaced with replacement."
       (fmtln "@printindex fn")
       (fmt "@bye"))))
 
-(defslimefun texinfo-source-for-system (system-name &key (use-pandoc t))
+(swank::defslimefun texinfo-source-for-system (system-name &key (use-pandoc t))
   (with-output-to-string (s)
     (render-texinfo-source-for-system
      (asdf:find-system system-name) s
      :use-pandoc use-pandoc)))
-
-(defun concat-rich-text (text)
-  (when (stringp text)
-    (return-from concat-rich-text text))
-  (let ((segments nil)
-	(segment nil))
-    (loop for word in text
-	  do (if (stringp word)
-		 (push word segment)
-		 ;; else, it is an "element"
-		 (destructuring-bind (el-type content) word
-		   (push (apply #'concatenate 'string (nreverse segment))
-			 segments)
-		   (setf segment nil)
-		   (push (list el-type (concat-rich-text content))
-			 segments)))
-	  finally (when segment
-		    (push (apply #'concatenate 'string (nreverse segment))
-			 segments)))
-    (nreverse segments)))
-
-(defun make-adjustable-string (s)
-  (make-array (length s)
-              :fill-pointer (length s)
-              :adjustable t
-              :initial-contents s
-              :element-type (array-element-type s)))
-
-(defun split-string-with-delimiter (string delimiter
-                                    &key (keep-delimiters t)
-                                    &aux (l (length string)))
-  (let ((predicate (cond
-                     ((characterp delimiter) (lambda (char) (eql char delimiter)))
-                     ((listp delimiter) (lambda (char) (member char delimiter)))
-                     ((functionp delimiter) delimiter)
-                     (t (error "Invalid delimiter")))))
-    (loop for start = 0 then (1+ pos)
-          for pos   = (position-if predicate string :start start)
-
-	  ;; no more delimiter found
-          when (and (null pos) (not (= start l)))
-            collect (subseq string start)
-
-	  ;; while delimiter found
-          while pos
-
-	  ;;  some content found
-          when (> pos start) collect (subseq string start pos)
-	    ;;  optionally keep delimiter
-            when keep-delimiters collect (string (aref string pos)))))
-
-(defun list-lambda-list-args (lambda-list)
-  "Takes a LAMBDA-LIST and returns the list of all the argument names."
-  (loop for arg in lambda-list
-	unless (and (symbolp arg) (char-equal (aref (symbol-name arg) 0) #\&)) ;; special argument
-	  collect (cond
-		    ((symbolp arg) arg)
-		    ((and (listp arg) (listp (first arg)))
-		     ;; we assume a keyword arg
-		     (second (first arg)))
-		    ((listp arg)
-		     (first arg))
-		    (t (error "Could not read the argument name")))))
-
-;; (list-lambda-list-args '(foo))
-;; (list-lambda-list-args '(foo &optional bar))
-;; (list-lambda-list-args '(foo &optional (bar 22)))
-;; (list-lambda-list-args '(foo &optional (bar 22) &key key (key2 33) &rest args &body body))
-
-(defun parse-docstring (docstring bound-args &key case-sensitive (package *package*))
-  "Parse a docstring.
-BOUND-ARGS: when parsing a function/macro/generic function docstring, BOUND-ARGS contains the names of the arguments. That means the function arguments are detected by the parser.
-CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when in uppercase.
-"
-  (let ((words (split-string-with-delimiter
-                docstring
-                (lambda (char)
-                  (not
-                   (or (alphanumericp char)
-                       (find char "+-*/@$%^&_=<>~:"))))))
-        (string-test (if case-sensitive
-                         'string=
-                         'equalp)))
-    (concat-rich-text
-     (loop for word in words
-           collect (cond
-                     ((member (string-upcase word) (mapcar 'symbol-name bound-args) :test string-test)
-                      (list :arg word))
-                     ((fboundp (intern word package))
-                      (list :fn word))
-                     ((boundp (intern word package))
-                      (list :var word))
-                     ((eql (aref word 0) #\:)
-                      (list :key word))
-                     (t word))))))
-
-;; (parse-docstring "asdf" nil)
-;; (parse-docstring "asdf" '(asdf))
-;; (parse-docstring "funcall parse-docstring" nil)
-;; (parse-docstring "adsfa adf
-;; asdfasd" nil)
-;;       (parse-docstring "lala :lolo" nil)
-;;       (parse-docstring "*communication-style*" nil)
 
 (defun render-parsed-docstring (docstring stream)
   (loop for word in docstring
@@ -781,40 +462,4 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
 ;; (render-parsed-docstring (parse-docstring "funcall parse-docstring" nil) t)
 ;; (render-parsed-docstring (parse-docstring "asdf" '(asdf)) t)
 
-(defun read-elisp-symbol-info (symbol)
-  (let ((info (read-symbol-info symbol)))
-    (unless (null info)
-      (when (aget info :package)
-	(setf (cdr (assoc :package info))
-	      (package-name (aget info :package))))
-      (when (aget info :documentation)
-	(push (cons :parsed-documentation
-		    (parse-docstring (aget info :documentation)
-                                     (when (member (aget info :type) '(:function :generic-function))
-                                       (list-lambda-list-args (read-from-string (aget info :args))))))
-              info))
-      (push (cons :symbol (cdr (assoc :name info))) info)
-      (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))
-      info)))
-
-(defun read-elisp-package-info (package-name)
-  (let ((package (or (find-package package-name)
-                     (error "Package not found: ~a" package-name)))
-        symbol-infos)
-    (do-external-symbols (symbol package)
-      (alexandria:when-let ((symbol-info (read-elisp-symbol-info symbol)))
-	(push symbol-info symbol-infos)))
-    (list (cons :type :package)
-          (cons :name package-name)
-          (cons :documentation (documentation package t))
-          (cons :external-symbols symbol-infos))))
-
-(defun read-elisp-system-info (system-name)
-  (let ((system (asdf:find-system system-name)))
-    (list (cons :type :system)
-          (cons :name system-name)
-          (cons :documentation (asdf:system-description system))
-          (cons :dependencies (asdf:system-depends-on system)))))
-
-;;(provide :swank-info)
-(provide :swank-help)
+(provide :swank-info)
