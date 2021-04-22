@@ -731,14 +731,21 @@ is replaced with replacement."
 
 (defun list-lambda-list-args (lambda-list)
   "Takes a LAMBDA-LIST and returns the list of all the argument names."
-  (multiple-value-bind (required optional rest keys aok aux keyp)
-      (alexandria:parse-ordinary-lambda-list lambda-list)
-    (concatenate 'list
-                 required
-                 (mapcar 'car optional)
-                 (list rest)
-                 (mapcar 'cadar keys)
-                 (list aux))))
+  (loop for arg in lambda-list
+	unless (and (symbolp arg) (char-equal (aref (symbol-name arg) 0) #\&)) ;; special argument
+	  collect (cond
+		    ((symbolp arg) arg)
+		    ((and (listp arg) (listp (first arg)))
+		     ;; we assume a keyword arg
+		     (second (first arg)))
+		    ((listp arg)
+		     (first arg))
+		    (t (error "Could not read the argument name")))))
+
+;; (list-lambda-list-args '(foo))
+;; (list-lambda-list-args '(foo &optional bar))
+;; (list-lambda-list-args '(foo &optional (bar 22)))
+;; (list-lambda-list-args '(foo &optional (bar 22) &key key (key2 33) &rest args &body body))
 
 (defun parse-docstring (docstring bound-args &key case-sensitive (package *package*))
   "Parse a docstring.
