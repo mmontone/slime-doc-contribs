@@ -465,8 +465,11 @@ the CADR of the list."
 (defun location-pathname (location)
   (pathname
    (cadr
-    (find :file (cdr location)
-          :key 'car))))
+    (or (find :file (cdr location)
+	      :key 'car)
+	(find :buffer-and-file (cdr location)
+	      :key 'car)
+	))))
 
 (defvar *package-source-locations* (make-hash-table)
   "A cache of packages source locations")
@@ -571,7 +574,7 @@ is replaced with replacement."
            (write-string (alexandria:read-file-into-string readme-file) stream))
          (write-texinfo-line (line stream)
            (let ((result line))
-             (setq result (replace-all result "@subsubsection" "@subsubsubsection"))
+             (setq result (replace-all result "@subsubsection" "@part"))
              (setq result (replace-all result "@subsection" "@subsubsection"))
              (setq result (replace-all result "@section" "@subsection"))
              (setq result (replace-all result "@chapter" "@section"))
@@ -670,9 +673,11 @@ is replaced with replacement."
       (fmtln "@printindex fn")
       (fmt "@bye"))))
 
-(defslimefun texinfo-source-for-system (system-name)
+(defslimefun texinfo-source-for-system (system-name &key (use-pandoc t))
   (with-output-to-string (s)
-    (render-texinfo-source-for-system (asdf:find-system system-name) s)))
+    (render-texinfo-source-for-system
+     (asdf:find-system system-name) s
+     :use-pandoc use-pandoc)))
 
 (defun concat-rich-text (text)
   text)
