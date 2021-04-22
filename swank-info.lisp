@@ -15,7 +15,7 @@
   ;; TODO: implement this portably
   (sb-int:info :type :kind symbol))
 
-(defun read-symbol-info (symbol)
+(defun read-symbol-info (symbol &key (error-if-not-successful nil))
   (cond
     ((fboundp symbol)
      (load-function-info symbol))
@@ -25,12 +25,15 @@
      (load-class-info symbol))
     ((tboundp symbol)
      (load-type-info symbol))
-    (t (error "Cannot read info of symbol: ~a" symbol))))
+    (t (if error-if-not-successful
+	   (error "Cannot read info of symbol: ~s" symbol)
+	   (warn "Could read info of symbol: ~s" symbol)))))
 
 (defun collect-package-info (&optional (package *package*))
   (let (docs)
     (do-external-symbols (symbol package)
-      (push (read-symbol-info symbol) docs))
+      (alexandria:when-let ((symbol-info (read-symbol-info symbol)))
+	(push symbol-info docs)))
     docs))
 
 ;; From docbrowser
@@ -770,25 +773,27 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
 
 (defun read-elisp-symbol-info (symbol)
   (let ((info (read-symbol-info symbol)))
-    (when (aget info :package)
-      (setf (cdr (assoc :package info))
-            (package-name (aget info :package))))
-    (when (aget info :documentation)
-      (push (cons :parsed-documentation
-                  (parse-docstring (aget info :documentation)
-                                   (when (member (aget info :type) '(:function :generic-function))
-                                     (list-lambda-list-args (read-from-string (aget info :args))))))
-            info))
-    (push (cons :symbol (cdr (assoc :name info))) info)
-    (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))
-    info))
+    (unless (null info)
+      (when (aget info :package)
+	(setf (cdr (assoc :package info))
+	      (package-name (aget info :package))))
+      (when (aget info :documentation)
+	(push (cons :parsed-documentation
+		    (parse-docstring (aget info :documentation)
+                                     (when (member (aget info :type) '(:function :generic-function))
+                                       (list-lambda-list-args (read-from-string (aget info :args))))))
+              info))
+      (push (cons :symbol (cdr (assoc :name info))) info)
+      (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))
+      info)))
 
 (defun read-elisp-package-info (package-name)
   (let ((package (or (find-package package-name)
                      (error "Package not found: ~a" package-name)))
         symbol-infos)
     (do-external-symbols (symbol package)
-      (push (read-elisp-symbol-info symbol) symbol-infos))
+      (alexandria:when-let ((symbol-info (read-elisp-symbol-info symbol)))
+	(push symbol-info symbol-infos)))
     (list (cons :type :package)
           (cons :name package-name)
           (cons :documentation (documentation package t))
