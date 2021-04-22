@@ -363,9 +363,6 @@
    ;; setup key bindings
    (slime-help-setup-key-bindings)))
 
-(defun slime-help-init ()
-  (slime-help-setup-key-bindings))
-
 (defgroup slime-help nil
   "Common Lisp documentation browser"
   :prefix "slime-help-"
