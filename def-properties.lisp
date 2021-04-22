@@ -1,3 +1,8 @@
+(require :cl-fad)
+(require :alexandria)
+(require :swank)
+(require :closer-mop)
+
 (defpackage :def-properties
   (:use :cl)
   (:export
@@ -327,3 +332,5 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
 ;; asdfasd" nil)
 ;;       (parse-docstring "lala :lolo" nil)
 ;;       (parse-docstring "*communication-style*" nil)
+
+(provide :def-properties)

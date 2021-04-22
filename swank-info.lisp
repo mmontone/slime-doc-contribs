@@ -1,3 +1,5 @@
+(require :def-properties (merge-pathnames #p"def-properties.lisp" (uiop/pathname:pathname-directory-pathname *load-pathname*)))
+
 (defpackage :swank-info
   (:use :cl :swank :def-properties)
   (:export

@@ -354,7 +354,7 @@
   "Augmented help"
   (:authors "Mariano Montone")
   (:license "GPL")
-  ;;(:slime-dependencies )
+  (:slime-dependencies slime-asdf)
   (:swank-dependencies swank-help)
   (:on-load
    ;; setup key bindings
