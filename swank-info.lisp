@@ -680,7 +680,24 @@ is replaced with replacement."
      :use-pandoc use-pandoc)))
 
 (defun concat-rich-text (text)
-  text)
+  (when (stringp text)
+    (return-from concat-rich-text text))
+  (let ((segments nil)
+	(segment nil))
+    (loop for word in text
+	  do (if (stringp word)
+		 (push word segment)
+		 ;; else, it is an "element"
+		 (destructuring-bind (el-type content) word
+		   (push (apply #'concatenate 'string (nreverse segment))
+			 segments)
+		   (setf segment nil)
+		   (push (list el-type (concat-rich-text content))
+			 segments)))
+	  finally (when segment
+		    (push (apply #'concatenate 'string (nreverse segment))
+			 segments)))
+    (nreverse segments)))
 
 (defun make-adjustable-string (s)
   (make-array (length s)
@@ -733,7 +750,7 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
                 (lambda (char)
                   (not
                    (or (alphanumericp char)
-                       (find char "+-*/@$%^&_=<>~"))))))
+                       (find char "+-*/@$%^&_=<>~:"))))))
         (string-test (if case-sensitive
                          'string=
                          'equalp)))
