@@ -52,19 +52,6 @@ not available is DATA."
       (error "~s not found in data" key))
     (cdr v)))
 
-#+nil(defun symbol-external-p (symbol &optional (package (symbol-package symbol)))
-       "Return non-NIL if SYMBOL is external in PACKAGE. SYMBOL may be either
-a symbol, or a SETF form, in which case the check will be performed on
-the CADR of the list."
-       (eq (nth-value 1 (find-symbol (symbol-name (cond ((symbolp symbol)
-                                                         symbol)
-                                                        ((eq (car symbol) 'setf)
-                                                         (cadr symbol))
-                                                        (t
-                                                         (error "Unknown symbol type: ~s" symbol))))
-                                     package))
-           :external))
-
 (defun prin1-to-string-with-package (obj package)
   (let ((*package* package))
     (prin1-to-string obj)))
