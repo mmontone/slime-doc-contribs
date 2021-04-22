@@ -389,7 +389,7 @@ is replaced with replacement."
     (let* ((system-name (asdf:component-name asdf-system))
            (system-packages (asdf-system-packages asdf-system))
            (readme-file (find "README"
-                              (fad:list-directory (asdf:system-source-directory asdf-system))
+                              (uiop/filesystem:directory-files (asdf:system-source-directory asdf-system))
                               :key 'pathname-name
                               :test 'string=)))
       (fmtln "@setfilename ~a" system-name)

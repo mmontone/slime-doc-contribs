@@ -1,4 +1,3 @@
-(require :cl-fad)
 (require :alexandria)
 (require :swank)
 (require :closer-mop)
