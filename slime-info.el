@@ -132,9 +132,15 @@ INTERNAL: whether to include package internal symbols."
   :group 'slime-info)
 
 (defcustom slime-info-use-pandoc t
-  "Wether to use pandoc for processing ASDF system docs when available"
+  "When enabled, pandoc is used for processing ASDF system docs when available"
+  :type 'boolean
+  :group 'slime-info)
+
+(defcustom slime-info-parse-docstrings t
+  "When enabled, docstrings are parsed and function arguments and code references are formatted accordingly."
   :type 'boolean
   :group 'slime-info)
 
 (provide 'slime-info)
+
 ;;; slime-info.el ends here

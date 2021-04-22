@@ -64,6 +64,10 @@
 (defun slime-help--horizontal-line (&rest width)
   (make-string (or width 80) ?\u2500))
 
+(defun slime-help--insert-documentation (info)
+  (if slime-help-parse-docstrings
+      (render-parsed-docstring (cdr (assoc :parsed-documentation info)))
+    (insert (cdr (assoc :documentation info)))))
 
 (defun render-parsed-docstring (docstring)
   (dolist (word docstring)
@@ -141,8 +145,7 @@
                          'help-echo "Describe symbol")
           (newline)
           (if (cdr (assoc :documentation symbol-info))
-              ;;(insert (cdr (assoc :documentation symbol-info)))
-              (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
+              (slime-help--insert-documentation symbol-info)
             (insert "Not documented"))
           (newline)
           (insert (slime-help--horizontal-line))
@@ -185,7 +188,7 @@
         (newline)
         (insert (--highlight-syntax (cdr (assoc :args symbol-info))))
         (newline 2)
-        (render-parsed-docstring (cdr (assoc :parsed-documentation symbol-info)))
+        (slime-help--insert-documentation symbol-info)
         (newline 2)
         (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
@@ -363,5 +366,14 @@
 (defun slime-help-init ()
   (slime-help-setup-key-bindings))
 
+(defgroup slime-help nil
+  "Common Lisp documentation browser"
+  :prefix "slime-help-"
+  :group 'slime)
+
+(defcustom slime-help-parse-docstrings t
+  "When enabled, docstrings are parsed and function arguments and code references are formatted accordingly."
+  :type 'boolean
+  :group 'slime-help)
 
 (provide 'slime-help)
