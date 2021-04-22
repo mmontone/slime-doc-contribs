@@ -9,12 +9,6 @@
 (defun aget (alist key)
   (cdr (assoc key alist :test 'equalp)))
 
-(defun tboundp (symbol)
-  "Returns T if a type is bound to symbol"
-  ;; This was taken from swank backend
-  ;; TODO: implement this portably
-  (sb-int:info :type :kind symbol))
-
 (defun read-symbol-info (symbol &key (error-if-not-successful nil))
   (cond
     ((fboundp symbol)
@@ -23,7 +17,7 @@
      (load-variable-info symbol))
     ((safe-class-for-symbol symbol)
      (load-class-info symbol))
-    ((tboundp symbol)
+    ((type-specifier-p symbol)
      (load-type-info symbol))
     (t (if error-if-not-successful
 	   (error "Cannot read info of symbol: ~s" symbol)
