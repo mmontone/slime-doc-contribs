@@ -725,7 +725,7 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
                 (lambda (char)
                   (not
                    (or (alphanumericp char)
-                       (find char "+-*/@$%^&_=<>~.?![]{}"))))))
+                       (find char "+-*/@$%^&_=<>~"))))))
         (string-test (if case-sensitive
                          'string=
                          'equalp)))
