@@ -1,5 +1,11 @@
 (defpackage :swank-info
-  (:use :cl :swank :def-properties))
+  (:use :cl :swank :def-properties)
+  (:export
+   :texinfo-source-for-function
+   :texinfo-source-for-package
+   :texinfo-source-for-system
+   :texinfo-source-for-apropos
+   :texinfo-source-for-symbol))
 
 (in-package :swank-info)
 
@@ -452,9 +458,15 @@ is replaced with replacement."
              ((and (listp word) (eql (car word) :arg))
               (format stream "@var{~a}" (second word)))
              ((and (listp word) (eql (car word) :fn))
-              (format stream "@ref{~a}" (second word)))
+	      ;; We would like to do this, but we have to make sure the referenced thing exists
+              ;;(format stream "@ref{~a}" (second word))
+	      (format stream "@code{~a}" (second word))
+	      )
              ((and (listp word) (eql (car word) :var))
-              (format stream "@ref{~a}" (second word)))
+	      ;; We would like to do this, but we have to make sure the referenced thing exists
+              ;;(format stream "@ref{~a}" (second word))
+	      (format stream "@var{~a}" (second word))
+	      )
              ((and (listp word) (eql (car word) :key))
               (format stream "@var{~a}" (second word))))))
 

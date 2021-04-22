@@ -47,7 +47,7 @@
   (interactive (list (slime-read-symbol-name "Symbol: ")))
   (when (not symbol-name)
     (error "No symbol name given"))
-  (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-symbol ,symbol-name))))
+  (let ((texinfo-source (slime-eval `(swank-info:texinfo-source-for-symbol ,symbol-name))))
     (slime-info/display-info-buffer texinfo-source)))
 
 (defun slime-info-package (package-name)
@@ -55,7 +55,7 @@
   (interactive (list (slime-read-package-name "Package name: ")))
   (when (not package-name)
     (error "No package name given"))
-  (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-package ,package-name))))
+  (let ((texinfo-source (slime-eval `(swank-info:texinfo-source-for-package ,package-name))))
     (slime-info/display-info-buffer texinfo-source)))
 
 (defun slime-info-system (system-name)
@@ -63,7 +63,7 @@
   (interactive (list (slime-read-system-name "System name")))
   (when (not system-name)
     (error "No ASDF system name given"))
-  (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-system ,system-name :use-pandoc ,slime-info-use-pandoc))))
+  (let ((texinfo-source (slime-eval `(swank-info:texinfo-source-for-system ,system-name :use-pandoc ,slime-info-use-pandoc))))
     (slime-info/display-info-buffer texinfo-source)))
 
 ;; (defun slime-info-apropos (symbol-name)
@@ -95,7 +95,7 @@ CASE-SENSITIVE-P: toggle case sensitiveness."
              (y-or-n-p "Case-sensitive? "))
      (list (read-string "SLIME Apropos: ") t nil nil)))
   (let ((buffer-package (or package (slime-current-package))))
-    (let ((texinfo-source (slime-eval `(swank:texinfo-source-for-apropos ,string ,only-external-p ,case-sensitive-p ',package))))
+    (let ((texinfo-source (slime-eval `(swank-info:texinfo-source-for-apropos ,string ,only-external-p ,case-sensitive-p ',package))))
       (slime-info/display-info-buffer texinfo-source))))
 
 (defun slime-info-apropos-all ()
