@@ -12,10 +12,49 @@
    :type-properties
    :package-properties
    :parse-docstring
-   :list-lambda-list-args)
+   :list-lambda-list-args
+
+   :symbol-kinds
+   :symbol-kind-p
+   :symbol-variable-p
+   :symbol-function-p
+   :symbol-generic-function-p
+   :symbol-type-p
+   :symbol-class-p
+   :symbol-structure-p)
   (:documentation "Collects properties about Lisp definitions, in a portable way"))
 
 (in-package :def-properties)
+
+;; TODO: support all aspects from swank::describe-symbol-for-emacs:
+;; :VARIABLE :FUNCTION :SETF :SPECIAL-OPERATOR :MACRO :COMPILER-MACRO
+;; :TYPE :CLASS :ALIEN-TYPE :ALIEN-STRUCT :ALIEN-UNION :ALIEN-ENUM
+
+(defun symbol-kinds (symbol)
+  "Return the kinds of the SYMBOL."
+  (remove-if-not 'symbolp (swank::describe-symbol-for-emacs symbol)))
+
+(defun symbol-kind-p (symbol kind)
+  (find kind (symbol-kinds symbol)))
+
+(defun symbol-variable-p (symbol)
+  (symbol-kind-p symbol :variable))
+
+(defun symbol-function-p (symbol)
+  (symbol-kind-p symbol :function))
+
+(defun symbol-generic-function-p (symbol)
+  (symbol-kind-p symbol :generic-function))
+
+(defun symbol-type-p (symbol)
+  (symbol-kind-p symbol :type))
+
+(defun symbol-class-p (symbol)
+  (find-class symbol nil))
+
+(defun symbol-structure-p (symbol)
+  (and (find-class symbol nil)
+       (typep (find-class symbol nil) 'structure-class)))
 
 (defun symbol-properties (symbol &key type (error-if-not-successful nil))
   "Collects properties about a symbol.
