@@ -62,12 +62,62 @@
 (defun slime-help--horizontal-line (&rest width)
   (make-string (or width 80) ?\u2500))
 
+(defun slime-help--propertize-docstring (string)
+  (slime-help--propertize-links
+   (slime-help--propertize-bare-links string)))
+
 (defun slime-help--insert-documentation (info)
   (if slime-help-parse-docstrings
-      (render-parsed-docstring (cdr (assoc :parsed-documentation info)))
-    (insert (cdr (assoc :documentation info)))))
+      (slime-help--format-parsed-docstring (cdr (assoc :parsed-documentation info)))
+    (insert (slime-help--propertize-docstring (cdr (assoc :documentation info))))))
 
-(defun render-parsed-docstring (docstring)
+;; copied from helpful.el library
+
+(define-button-type 'slime-help-link-button
+  'action #'slime-help--follow-link
+  'follow-link t
+  'help-echo "Follow this link")
+
+(defun slime-help--propertize-links (docstring)
+  "Convert URL links in docstrings to buttons."
+  (replace-regexp-in-string
+   (rx "URL `" (group (*? any)) "'")
+   (lambda (match)
+     (let ((url (match-string 1 match)))
+       (concat "URL "
+               (slime-help--button
+                url
+                'slime-help-link-button
+                'url url))))
+   docstring))
+
+(defun slime-help--propertize-bare-links (docstring)
+  "Convert URL links in docstrings to buttons."
+  (replace-regexp-in-string
+   (rx (group (or string-start space "<"))
+       (group "http" (? "s") "://" (+? (not (any space))))
+       (group (? (any "." ">" ")"))
+              (or space string-end ">")))
+   (lambda (match)
+     (let ((space-before (match-string 1 match))
+           (url (match-string 2 match))
+           (after (match-string 3 match)))
+       (concat
+        space-before
+        (slime-help--button
+         url
+         'slime-help-link-button
+         'url url)
+        after)))
+   docstring))
+
+(defun slime-help--follow-link (button)
+  "Follow the URL specified by BUTTON."
+  (browse-url (button-get button 'url)))
+
+;; helpful.el stuff ends here
+
+(defun slime-help--format-parsed-docstring (docstring)
   (dolist (word docstring)
     (cond
      ((stringp word) (insert word))
@@ -75,15 +125,15 @@
       (insert (propertize (second word) 'face 'slime-help-argument)))
      ((and (listp word) (eql (first word) :fn))
       (insert-button (second word)
-		     'action (lambda (btn)
-			       (slime-help-symbol (second word)))
-		     'follow-link t
-		     'help-echo "Describe function"))
+                     'action (lambda (btn)
+                               (slime-help-symbol (second word)))
+                     'follow-link t
+                     'help-echo "Describe function"))
      ((and (listp word) (eql (first word) :key))
       (insert (propertize (second word) 'face 'slime-help-keyword)))
      ((and (listp word) (eql (first word) :var))
       (insert (propertize (second word) 'face 'slime-help-variable)))
-     (t (error "Don't know how to render")))))
+     (t (error "Don't know how to format")))))
 
 (defun slime-help-symbol (symbol-name)
   (interactive (list (slime-read-symbol-name "Describe symbol: ")))
@@ -132,7 +182,7 @@
         (insert (slime-help--heading-2 "Exported symbols"))
         (newline 2)
         (insert (slime-help--horizontal-line))
-	(newline)
+        (newline)
         (dolist (symbol-info (cdr (assoc :external-symbols package-info)))
           (insert (propertize (subseq (symbol-name (cdr (assoc :type symbol-info))) 1) 'face 'slime-help-type))
           (insert " ")
@@ -150,10 +200,10 @@
           (newline))
         (setq buffer-read-only t)
         (local-set-key "q" 'slime-help--kill-current-buffer)
-	(local-set-key "Q" 'slime-help--kill-all-help-buffers)
+        (local-set-key "Q" 'slime-help--kill-all-help-buffers)
         (buffer-disable-undo)
         (set (make-local-variable 'kill-buffer-query-functions) nil)
-	(slime-mode)
+        (slime-mode)
         (goto-char 0)
         (pop-to-buffer buffer)
         nil))))
@@ -218,10 +268,10 @@
                          'follow-link t))
         (setq buffer-read-only t)
         (local-set-key "q" 'slime-help--kill-current-buffer)
-	(local-set-key "Q" 'slime-help--kill-all-help-buffers)
+        (local-set-key "Q" 'slime-help--kill-all-help-buffers)
         (buffer-disable-undo)
         (set (make-local-variable 'kill-buffer-query-functions) nil)
-	(slime-mode)
+        (slime-mode)
         (goto-char 0)
         (pop-to-buffer buffer)
         nil))))
@@ -322,15 +372,15 @@
                          'follow-link t
                          'help-echo "Load system"))
 
-	(newline)
+        (newline)
 
-	(setq buffer-read-only t)
-	(local-set-key "q" 'slime-help--kill-current-buffer)
-	(buffer-disable-undo)
-	(set (make-local-variable 'kill-buffer-query-functions) nil)
-	(goto-char 0)
-	(pop-to-buffer buffer)
-	nil))))
+        (setq buffer-read-only t)
+        (local-set-key "q" 'slime-help--kill-current-buffer)
+        (buffer-disable-undo)
+        (set (make-local-variable 'kill-buffer-query-functions) nil)
+        (goto-char 0)
+        (pop-to-buffer buffer)
+        nil))))
 
 ;;(slime-help-system "alexandria")
 
