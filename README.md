@@ -33,6 +33,7 @@ In Emacs, add this repository path to `load-path` and ddd `slime-help` and `slim
 
 ### Commands
 
+```
 slime-help-function	      M-x ... RET
    Display documentation about Common Lisp function bound to
    SYMBOL-NAME.
@@ -45,11 +46,13 @@ slime-help-system	      M-x ... RET
 slime-help-variable	      M-x ... RET
    Display documentation about Common Lisp variable bound to
    SYMBOL-NAME.
+```
 
 ## SLIME-INFO
 
 ### Commands
 
+```
 slime-info-apropos	      M-x ... RET
    (not documented)
 slime-info-apropos-all	      M-x ... RET
@@ -64,3 +67,4 @@ slime-info-symbol	      M-x ... RET
 slime-info-system	      M-x ... RET
    Show information about Common Lisp ASDF system named SYSTEM-NAME,
    using an Info buffer.
+```
