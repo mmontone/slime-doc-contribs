@@ -197,6 +197,7 @@
     (pop-to-buffer buffer)))
 
 (defun slime-help-package (package-name)
+  "Display information about Common Lisp package named PACKAGE-NAME."
   (interactive (list (slime-read-package-name "Describe package: ")))
   (when (not package-name)
     (error "No package name given"))
@@ -249,6 +250,7 @@
 ;;(slime-help-package "ALEXANDRIA")
 
 (defun slime-help-function (symbol-name)
+  "Display documentation about Common Lisp function bound to SYMBOL-NAME."
   (interactive (list (slime-read-symbol-name "Describe function: ")))
   (when (not symbol-name)
     (error "No symbol given"))
@@ -309,6 +311,7 @@
 ;;(slime-help-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
 
 (defun slime-help-variable (symbol-name)
+  "Display documentation about Common Lisp variable bound to SYMBOL-NAME."
   (interactive (list (slime-read-symbol-name "Describe variable: ")))
   (when (not symbol-name)
     (error "No symbol given"))
@@ -391,7 +394,7 @@
     source))
 
 (defun slime-help-system (system-name)
-
+  "Display documentation about ASDF system named SYSTEM-NAME."
   (interactive (list (slime-read-system-name "Describe system")))
   (when (not system-name)
     (error "No system name given"))
