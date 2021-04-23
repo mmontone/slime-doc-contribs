@@ -95,7 +95,7 @@
 
 (defun slime-help--lookup-in-manuals (btn)
   (funcall slime-help-lookup-in-manuals-function
-	   (prin1-to-string (button-get btn 'symbol))))
+           (prin1-to-string (button-get btn 'symbol))))
 
 (defun slime-help--propertize-links (docstring)
   "Convert URL links in docstrings to buttons."
@@ -169,10 +169,10 @@
   (let ((symbol-infos (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name))))))
     (dolist (symbol-info symbol-infos)
       (case (cdr (assoc :type symbol-info))
-	(:function (slime-help-function symbol-name))
-	(:package (slime-help-package symbol-name))
-	(:variable (slime-help-variable symbol-name))
-	(t (error "TODO"))))))
+        (:function (slime-help-function symbol-name))
+        (:package (slime-help-package symbol-name))
+        (:variable (slime-help-variable symbol-name))
+        (t (error "TODO"))))))
 
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
 
@@ -184,6 +184,17 @@
 (defun slime-help--kill-current-buffer ()
   (interactive)
   (kill-buffer (current-buffer)))
+
+(defun slime-help--open-buffer ()
+  (let ((buffer (current-buffer)))
+    (setq buffer-read-only t)
+    (local-set-key "q" 'slime-help--kill-current-buffer)
+    (local-set-key "Q" 'slime-help--kill-all-help-buffers)
+    (buffer-disable-undo)
+    (set (make-local-variable 'kill-buffer-query-functions) nil)
+    (slime-mode)
+    (goto-char 0)
+    (pop-to-buffer buffer)))
 
 (defun slime-help-package (package-name)
   (interactive (list (slime-read-package-name "Describe package: ")))
@@ -232,14 +243,7 @@
           (newline)
           (insert (slime-help--horizontal-line))
           (newline))
-        (setq buffer-read-only t)
-        (local-set-key "q" 'slime-help--kill-current-buffer)
-        (local-set-key "Q" 'slime-help--kill-all-help-buffers)
-        (buffer-disable-undo)
-        (set (make-local-variable 'kill-buffer-query-functions) nil)
-        (slime-mode)
-        (goto-char 0)
-        (pop-to-buffer buffer)
+        (slime-help--open-buffer)
         nil))))
 
 ;;(slime-help-package "ALEXANDRIA")
@@ -295,17 +299,10 @@
                          'help-echo "Disassemble function"))
         (insert " ")
 
-	(insert (slime-help--button "Lookup in manuals"
-				    'slime-help-lookup-in-manuals-button
-				    'symbol (cdr (assoc :symbol symbol-info))))
-        (setq buffer-read-only t)
-        (local-set-key "q" 'slime-help--kill-current-buffer)
-        (local-set-key "Q" 'slime-help--kill-all-help-buffers)
-        (buffer-disable-undo)
-        (set (make-local-variable 'kill-buffer-query-functions) nil)
-        (slime-mode)
-        (goto-char 0)
-        (pop-to-buffer buffer)
+        (insert (slime-help--button "Lookup in manuals"
+                                    'slime-help-lookup-in-manuals-button
+                                    'symbol (cdr (assoc :symbol symbol-info))))
+        (slime-help--open-buffer)
         nil))))
 
 ;;(slime-help-function "ALEXANDRIA:FLATTEN")
@@ -325,7 +322,7 @@
            (package-name (cdr (assoc :package symbol-info)))
            (buffer (get-buffer-create buffer-name)))
       (when (null symbol-info)
-	(error "Could not read variable info"))
+        (error "Could not read variable info"))
       (with-current-buffer buffer
         (insert (slime-help--heading-1 (cdr (assoc :name symbol-info))))
         (newline 2)
@@ -335,8 +332,8 @@
                                  (slime-help-package package-name))
                        'follow-link t
                        'help-echo "Describe package")
-	(newline 2)
-	(slime-help--insert-documentation symbol-info)
+        (newline 2)
+        (slime-help--insert-documentation symbol-info)
         (newline 2)
         (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
@@ -353,17 +350,10 @@
                          'help-echo "Browse references"))
         (insert " ")
 
-	(insert (slime-help--button "Lookup in manuals"
-					   'slime-help-lookup-in-manuals-button
-					   'symbol (cdr (assoc :symbol symbol-info))))
-	(setq buffer-read-only t)
-        (local-set-key "q" 'slime-help--kill-current-buffer)
-        (local-set-key "Q" 'slime-help--kill-all-help-buffers)
-        (buffer-disable-undo)
-        (set (make-local-variable 'kill-buffer-query-functions) nil)
-        (slime-mode)
-        (goto-char 0)
-        (pop-to-buffer buffer)
+        (insert (slime-help--button "Lookup in manuals"
+                                    'slime-help-lookup-in-manuals-button
+                                    'symbol (cdr (assoc :symbol symbol-info))))
+        (slime-help--open-buffer)
         nil))))
 
 ;; (slime-help-variable "*STANDARD-OUTPUT*")
