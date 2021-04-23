@@ -12,22 +12,28 @@
 (defun aget (alist key)
   (cdr (assoc key alist :test 'equalp)))
 
-(defun read-emacs-symbol-info (symbol)
-  (let ((info (symbol-properties symbol)))
-    (unless (null info)
-      (when (aget info :package)
-	(setf (cdr (assoc :package info))
-	      (package-name (aget info :package))))
-      (when (aget info :documentation)
-	(push (cons :parsed-documentation
-		    (parse-docstring (aget info :documentation)
-                                     (when (member (aget info :type) '(:function :generic-function))
-                                       (list-lambda-list-args
-					(aget info :arglist)))))
-              info))
-      (push (cons :symbol (cdr (assoc :name info))) info)
-      (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))
-      info)))
+(defun info-for-emacs (info)
+  (when (aget info :package)
+    (setf (cdr (assoc :package info))
+	  (package-name (aget info :package))))
+  (when (aget info :documentation)
+    (push (cons :parsed-documentation
+		(parse-docstring (aget info :documentation)
+				 (when (member (aget info :type) '(:function :generic-function))
+				   (list-lambda-list-args
+				    (aget info :arglist)))))
+	  info))
+  (push (cons :symbol (cdr (assoc :name info))) info)
+  (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))
+  info)
+
+(defun read-emacs-symbol-info (symbol &optional kind)
+  (let ((infos (symbol-properties symbol)))
+    (if kind
+	(alexandria:when-let ((info (find kind infos :key (lambda (info)
+							    (aget info :type)))))
+	  (info-for-emacs info))
+	(mapcar 'info-for-emacs infos))))
 
 (defun read-emacs-package-info (package-name)
   (let ((package (or (find-package package-name)
@@ -39,7 +45,7 @@
     (list (cons :type :package)
           (cons :name package-name)
           (cons :documentation (documentation package t))
-          (cons :external-symbols symbol-infos))))
+          (cons :external-symbols (apply #'append symbol-infos)))))
 
 (defun read-emacs-system-info (system-name)
   (let ((system (asdf:find-system system-name)))

@@ -154,16 +154,25 @@
       (insert (propertize (second word) 'face 'slime-help-variable)))
      (t (error "Don't know how to format")))))
 
-(defun slime-help-symbol (symbol-name)
-  (interactive (list (slime-read-symbol-name "Describe symbol: ")))
-  (when (not symbol-name)
-    (error "No symbol given"))
+(defun slime-help-symbol-kind (symbol-name kind)
   (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name))))))
     (case (cdr (assoc :type symbol-info))
       (:function (slime-help-function symbol-name))
       (:package (slime-help-package symbol-name))
-      (:variable (slime-help-variable symbol-name))
-      (t (error "TODO")))))
+      (:variable (slime-help-variable symbol-name)))))
+
+(defun slime-help-symbol (symbol-name)
+  "Open a help buffer for each kind of SYMBOL-NAME."
+  (interactive (list (slime-read-symbol-name "Describe symbol: ")))
+  (when (not symbol-name)
+    (error "No symbol given"))
+  (let ((symbol-infos (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name))))))
+    (dolist (symbol-info symbol-infos)
+      (case (cdr (assoc :type symbol-info))
+	(:function (slime-help-function symbol-name))
+	(:package (slime-help-package symbol-name))
+	(:variable (slime-help-variable symbol-name))
+	(t (error "TODO"))))))
 
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
 
@@ -245,7 +254,7 @@
       (pop-to-buffer buffer-name)
       (return-from slime-help-function))
 
-    (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)))))
+    (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :function)))
            (package-name (cdr (assoc :package symbol-info)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
@@ -287,8 +296,8 @@
         (insert " ")
 
 	(insert (slime-help--button "Lookup in manuals"
-					   'slime-help-lookup-in-manuals-button
-					   'symbol (cdr (assoc :symbol symbol-info))))
+				    'slime-help-lookup-in-manuals-button
+				    'symbol (cdr (assoc :symbol symbol-info))))
         (setq buffer-read-only t)
         (local-set-key "q" 'slime-help--kill-current-buffer)
         (local-set-key "Q" 'slime-help--kill-all-help-buffers)
@@ -303,7 +312,7 @@
 ;;(slime-help-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
 
 (defun slime-help-variable (symbol-name)
-  (interactive (list (slime-read-symbol-name "Describe varaible: ")))
+  (interactive (list (slime-read-symbol-name "Describe variable: ")))
   (when (not symbol-name)
     (error "No symbol given"))
 
@@ -345,14 +354,11 @@
                          'follow-link t
                          'help-echo "Browse references"))
         (insert " ")
-                
-        (cl-flet ((lookup-in-info (btn)
-                                  (info-apropos (prin1-to-string (cdr (assoc :symbol symbol-info))))))
-          (insert-button "Lookup in manual"
-                         'action (function lookup-in-info)
-                         'help-echo "Search for this in manuals"
-                         'follow-link t))
-        (setq buffer-read-only t)
+
+	(insert (slime-help--button "Lookup in manuals"
+					   'slime-help-lookup-in-manuals-button
+					   'symbol (cdr (assoc :symbol symbol-info))))
+	(setq buffer-read-only t)
         (local-set-key "q" 'slime-help--kill-current-buffer)
         (local-set-key "Q" 'slime-help--kill-all-help-buffers)
         (buffer-disable-undo)

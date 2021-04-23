@@ -56,21 +56,19 @@
   (and (find-class symbol nil)
        (typep (find-class symbol nil) 'structure-class)))
 
-(defun symbol-properties (symbol &key type (error-if-not-successful nil))
+(defun symbol-properties (symbol)
   "Collects properties about a symbol.
 If TYPE is specified, then SYMBOL is treated as the given TYPE (variable, function, package, etc)."
-  (cond
-    ((fboundp symbol)
-     (function-properties symbol))
-    ((boundp symbol)
-     (variable-properties symbol))
-    ((safe-class-for-symbol symbol)
-     (class-properties symbol))
-    ((swank::type-specifier-p symbol)
-     (type-properties symbol))
-    (t (if error-if-not-successful
-	   (error "Cannot read properties of symbol: ~s" symbol)
-	   (warn "Could read properties of symbol: ~s" symbol)))))
+  (let (properties)
+    (when (symbol-function-p symbol)
+      (push (function-properties symbol) properties))
+    (when (symbol-variable-p symbol)
+      (push (variable-properties symbol) properties))
+    (when (symbol-class-p symbol)
+      (push (class-properties symbol) properties))
+    (when (symbol-type-p symbol)
+      (type-properties symbol))
+    properties))
 
 (defun aget (alist key)
   (cdr (assoc key alist :test 'equalp)))
@@ -159,11 +157,6 @@ not available is DATA."
                        (cons (car classes) found)))
                  found)))
     (f (list class) nil)))
-
-(defun safe-class-for-symbol (symbol)
-  (handler-case
-      (find-class symbol)
-    (error nil)))
 
 (defun assoc-name (v)
   (assoc-cdr :name v :error-p t))
