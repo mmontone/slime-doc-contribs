@@ -29,9 +29,9 @@ In Emacs, add this repository path to `load-path` and ddd `slime-help` and `slim
 
 ## Use
 
-## SLIME-HELP
+### SLIME-HELP
 
-### Commands
+#### Commands
 
 ```
 slime-help-function	      M-x ... RET
@@ -48,9 +48,9 @@ slime-help-variable	      M-x ... RET
    SYMBOL-NAME.
 ```
 
-## SLIME-INFO
+### SLIME-INFO
 
-### Commands
+#### Commands
 
 ```
 slime-info-apropos	      M-x ... RET
