@@ -1,10 +1,8 @@
 ;; -*- lexical-binding: t -*-
 
 (require 'cl)
-(require 'anaphora)
 (require 'map)
 (require 'button)
-(require 'dash)
 (require 'lisp-mode)
 (require 'slime)
 
@@ -251,12 +249,7 @@
         (let (hook-funcs)
           (dolist (hook delayed-mode-hooks)
             (let ((funcs (symbol-value hook)))
-              (setq hook-funcs (append hook-funcs funcs))))
-
-          ;; Filter hooks to those that relate to highlighting, and run them.
-          ;;(setq hook-funcs (-intersection hook-funcs help--highlighting-funcs))
-          ;;(-map #'funcall hook-funcs)
-          )
+              (setq hook-funcs (append hook-funcs funcs)))))
 
         (if (fboundp 'font-lock-ensure)
             (font-lock-ensure)
