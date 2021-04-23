@@ -147,6 +147,11 @@
 
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
 
+(defun slime-help--first-line (string)
+  "Return the first line of the `STRING'."
+  (let ((pos (position ?\n string)))
+    (if (null pos) string (subseq string 0 pos))))
+
 (defun slime-help--kill-current-buffer ()
   (interactive)
   (kill-buffer (current-buffer)))
@@ -193,7 +198,7 @@
                          'help-echo "Describe symbol")
           (newline)
           (if (cdr (assoc :documentation symbol-info))
-              (slime-help--insert-documentation symbol-info)
+              (insert (slime-help--first-line (cdr (assoc :documentation symbol-info))))
             (insert "Not documented"))
           (newline)
           (insert (slime-help--horizontal-line))
