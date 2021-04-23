@@ -73,10 +73,29 @@
 
 ;; copied from helpful.el library
 
+(defun slime-help--button (text type &rest properties)
+  ;; `make-text-button' mutates our string to add properties. Copy
+  ;; TEXT to prevent mutating our arguments, and to support 'pure'
+  ;; strings, which are read-only.
+  (setq text (substring-no-properties text))
+  (apply #'make-text-button
+         text nil
+         :type type
+         properties))
+
 (define-button-type 'slime-help-link-button
   'action #'slime-help--follow-link
   'follow-link t
   'help-echo "Follow this link")
+
+(define-button-type 'slime-help-lookup-in-manuals-button
+  'action #'slime-help--lookup-in-manuals
+  'follow-link t
+  'help-echo "Lookup in manuals")
+
+(defun slime-help--lookup-in-manuals (btn)
+  (funcall slime-help-lookup-in-manuals-function
+	   (prin1-to-string (button-get btn 'symbol))))
 
 (defun slime-help--propertize-links (docstring)
   "Convert URL links in docstrings to buttons."
@@ -143,6 +162,7 @@
     (case (cdr (assoc :type symbol-info))
       (:function (slime-help-function symbol-name))
       (:package (slime-help-package symbol-name))
+      (:variable (slime-help-variable symbol-name))
       (t (error "TODO")))))
 
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
@@ -216,7 +236,7 @@
 ;;(slime-help-package "ALEXANDRIA")
 
 (defun slime-help-function (symbol-name)
-  (interactive (list (slime-read-symbol-name "Describe symbol's function: ")))
+  (interactive (list (slime-read-symbol-name "Describe function: ")))
   (when (not symbol-name)
     (error "No symbol given"))
 
@@ -265,12 +285,10 @@
                          'follow-link t
                          'help-echo "Disassemble function"))
         (insert " ")
-        (cl-flet ((lookup-in-info (btn)
-                                  (info-apropos (prin1-to-string (cdr (assoc :symbol symbol-info))))))
-          (insert-button "Lookup in manual"
-                         'action (function lookup-in-info)
-                         'help-echo "Search for this in Info manuals"
-                         'follow-link t))
+
+	(insert (slime-help--button "Lookup in manuals"
+					   'slime-help-lookup-in-manuals-button
+					   'symbol (cdr (assoc :symbol symbol-info))))
         (setq buffer-read-only t)
         (local-set-key "q" 'slime-help--kill-current-buffer)
         (local-set-key "Q" 'slime-help--kill-all-help-buffers)
@@ -283,6 +301,67 @@
 
 ;;(slime-help-function "ALEXANDRIA:FLATTEN")
 ;;(slime-help-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
+
+(defun slime-help-variable (symbol-name)
+  (interactive (list (slime-read-symbol-name "Describe varaible: ")))
+  (when (not symbol-name)
+    (error "No symbol given"))
+
+  (let ((buffer-name (format "*slime-help: %s function*" symbol-name)))
+    (when (get-buffer buffer-name)
+      (pop-to-buffer buffer-name)
+      (return-from slime-help-function))
+
+    (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)))))
+           (package-name (cdr (assoc :package symbol-info)))
+           (buffer (get-buffer-create buffer-name)))
+      (with-current-buffer buffer
+        (insert (slime-help--heading-1 (cdr (assoc :name symbol-info))))
+        (newline 2)
+        (insert (format "This is a FUNCTION in package "))
+        (insert-button package-name
+                       'action (lambda (btn)
+                                 (slime-help-package package-name))
+                       'follow-link t
+                       'help-echo "Describe package")
+        (newline 2)
+        (insert (slime-help--heading-3 "Signature"))
+        (newline)
+        (insert (slime-help--highlight-syntax (cdr (assoc :args symbol-info))))
+        (newline 2)
+        (slime-help--insert-documentation symbol-info)
+        (newline 2)
+        (cl-flet ((goto-source (btn)
+                               (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+          (insert-button "Source"
+                         'action (function goto-source)
+                         'follow-link t
+                         'help-echo "Go to definition source code"))
+        (insert " ")
+        (cl-flet ((browse-references (btn)
+                                     (slime-who-calls (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+          (insert-button "References"
+                         'action (function browse-references)
+                         'follow-link t
+                         'help-echo "Browse references"))
+        (insert " ")
+                
+        (cl-flet ((lookup-in-info (btn)
+                                  (info-apropos (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+          (insert-button "Lookup in manual"
+                         'action (function lookup-in-info)
+                         'help-echo "Search for this in manuals"
+                         'follow-link t))
+        (setq buffer-read-only t)
+        (local-set-key "q" 'slime-help--kill-current-buffer)
+        (local-set-key "Q" 'slime-help--kill-all-help-buffers)
+        (buffer-disable-undo)
+        (set (make-local-variable 'kill-buffer-query-functions) nil)
+        (slime-mode)
+        (goto-char 0)
+        (pop-to-buffer buffer)
+        nil))))
+
 
 ;; This was copied from help.el
 (defun slime-help--highlight-syntax (source &optional mode)
@@ -421,6 +500,11 @@
 (defcustom slime-help-parse-docstrings t
   "When enabled, docstrings are parsed and function arguments and code references are formatted accordingly."
   :type 'boolean
+  :group 'slime-help)
+
+(defcustom slime-help-lookup-in-manuals-function 'info-apropos
+  "Function used to look up slime-help terms into manuals."
+  :type 'symbol
   :group 'slime-help)
 
 (provide 'slime-help)
