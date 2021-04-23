@@ -316,29 +316,27 @@
   (when (not symbol-name)
     (error "No symbol given"))
 
-  (let ((buffer-name (format "*slime-help: %s function*" symbol-name)))
+  (let ((buffer-name (format "*slime-help: %s variable*" symbol-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
       (return-from slime-help-function))
 
-    (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)))))
+    (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :variable)))
            (package-name (cdr (assoc :package symbol-info)))
            (buffer (get-buffer-create buffer-name)))
+      (when (null symbol-info)
+	(error "Could not read variable info"))
       (with-current-buffer buffer
         (insert (slime-help--heading-1 (cdr (assoc :name symbol-info))))
         (newline 2)
-        (insert (format "This is a FUNCTION in package "))
+        (insert (format "This is a VARIABLE in package "))
         (insert-button package-name
                        'action (lambda (btn)
                                  (slime-help-package package-name))
                        'follow-link t
                        'help-echo "Describe package")
-        (newline 2)
-        (insert (slime-help--heading-3 "Signature"))
-        (newline)
-        (insert (slime-help--highlight-syntax (cdr (assoc :args symbol-info))))
-        (newline 2)
-        (slime-help--insert-documentation symbol-info)
+	(newline 2)
+	(slime-help--insert-documentation symbol-info)
         (newline 2)
         (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
@@ -348,7 +346,7 @@
                          'help-echo "Go to definition source code"))
         (insert " ")
         (cl-flet ((browse-references (btn)
-                                     (slime-who-calls (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+                                     (slime-who-references (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "References"
                          'action (function browse-references)
                          'follow-link t
@@ -367,6 +365,8 @@
         (goto-char 0)
         (pop-to-buffer buffer)
         nil))))
+
+;; (slime-help-variable "*STANDARD-OUTPUT*")
 
 
 ;; This was copied from help.el
