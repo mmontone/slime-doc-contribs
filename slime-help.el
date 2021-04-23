@@ -155,6 +155,7 @@
 	(local-set-key "Q" 'slime-help--kill-all-help-buffers)
         (buffer-disable-undo)
         (set (make-local-variable 'kill-buffer-query-functions) nil)
+	(slime-mode)
         (goto-char 0)
         (pop-to-buffer buffer)
         nil))))
@@ -186,7 +187,7 @@
         (newline 2)
         (insert (slime-help--heading-3 "Signature"))
         (newline)
-        (insert (--highlight-syntax (cdr (assoc :args symbol-info))))
+        (insert (slime-help--highlight-syntax (cdr (assoc :args symbol-info))))
         (newline 2)
         (slime-help--insert-documentation symbol-info)
         (newline 2)
@@ -222,6 +223,7 @@
 	(local-set-key "Q" 'slime-help--kill-all-help-buffers)
         (buffer-disable-undo)
         (set (make-local-variable 'kill-buffer-query-functions) nil)
+	(slime-mode)
         (goto-char 0)
         (pop-to-buffer buffer)
         nil))))
@@ -230,7 +232,7 @@
 ;;(slime-help-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
 
 ;; This was copied from help.el
-(defun --highlight-syntax (source &optional mode)
+(defun slime-help--highlight-syntax (source &optional mode)
   "Return a propertized version of SOURCE in MODE."
   (unless mode
     (setq mode #'lisp-mode))
