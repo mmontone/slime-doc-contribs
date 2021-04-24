@@ -355,7 +355,7 @@ is replaced with replacement."
          (ln ()
            (terpri stream)))
     (let* ((system-name (asdf:component-name asdf-system))
-           (system-packages (when (swank:asdf-system-loaded-p asdf-system)
+           (system-packages (when (asdf:component-loaded-p asdf-system)
 			      (def-properties:asdf-system-packages asdf-system)))
            (readme-file (find "README"
                               (uiop/filesystem:directory-files (asdf:system-source-directory asdf-system))

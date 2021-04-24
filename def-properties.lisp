@@ -356,21 +356,16 @@ the CADR of the list."
 
 (defun list-lambda-list-args (lambda-list)
   "Takes a LAMBDA-LIST and returns the list of all the argument names."
-  (loop for arg in lambda-list
-        unless (and (symbolp arg) (char-equal (aref (symbol-name arg) 0) #\&)) ;; special argument
-          collect (cond
-                    ((symbolp arg) arg)
-                    ((and (listp arg) (listp (first arg)))
-                     ;; we assume a keyword arg
-                     (second (first arg)))
-                    ((listp arg)
-                     (first arg))
-                    (t (error "Could not read the argument name")))))
+  (loop for symbol in (alexandria:flatten lambda-list)
+        when (and (symbolp symbol)
+		  (not (char-equal (aref (symbol-name symbol) 0) #\&))) ;; special argument
+          collect symbol))
 
 ;; (list-lambda-list-args '(foo))
 ;; (list-lambda-list-args '(foo &optional bar))
 ;; (list-lambda-list-args '(foo &optional (bar 22)))
 ;; (list-lambda-list-args '(foo &optional (bar 22) &key key (key2 33) &rest args &body body))
+;; (list-lambda-list-args '((stream-name file-name &rest args &key (direction) &allow-other-keys) &body body))
 
 (defun parse-docstring (docstring bound-args &key case-sensitive (package *package*))
   "Parse a docstring.
@@ -426,7 +421,7 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
 
 ;; This function finds the packages defined from an ASDF, approximatly. And it is very slow.
 (defun asdf-system-packages (system)
-  (when (not (swank:asdf-system-loaded-p system))
+  (when (not (asdf:component-loaded-p system))
     (return-from asdf-system-packages nil))
   (let* ((asdf-system (if (or (symbolp system)
                               (stringp system))
