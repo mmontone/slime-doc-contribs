@@ -85,7 +85,7 @@ If TYPE is specified, then SYMBOL is treated as the given TYPE (variable, functi
   (let (docs)
     (do-external-symbols (symbol package)
       (alexandria:when-let ((symbol-properties (symbol-properties symbol)))
-	(push symbol-properties docs)))
+        (push symbol-properties docs)))
     docs))
 
 ;; From docbrowser
@@ -140,11 +140,26 @@ not available is DATA."
                                    (mapcar #'format-argument-to-string (swank-backend:arglist symbol))
                                    )
                       (princ-to-string (swank-backend:arglist symbol))))
-	(cons :arglist (swank::arglist symbol))
+        (cons :arglist (swank::arglist symbol))
         (cons :package (symbol-package symbol))
         (cons :type (cond ((macro-function symbol) :macro)
                           ((typep (symbol-function symbol) 'generic-function) :generic-function)
                           (t :function)))))
+
+(defun generic-function-properties (symbol)
+  (assert (typep (symbol-function symbol) 'generic-function))
+  (list (cons :name symbol)
+        (cons :documentation (documentation symbol 'function))
+        (cons :args (let ((*print-case* :downcase)
+                          (*package* (symbol-package symbol)))
+                      #+nil(format nil "~{~a~^ ~}"
+                                   (mapcar #'format-argument-to-string (swank-backend:arglist symbol))
+                                   )
+                      (princ-to-string (swank-backend:arglist symbol))))
+        (cons :arglist (swank::arglist symbol))
+        (cons :package (symbol-package symbol))
+        (cons :type :generic-function)
+        (cons :methods (closer-mop:generic-function-methods (symbol-function symbol)))))
 
 (defun variable-properties (symbol)
   (list (cons :name symbol)
@@ -179,13 +194,16 @@ not available is DATA."
   "Return non-NIL if SYMBOL is external in PACKAGE. SYMBOL may be either
 a symbol, or a SETF form, in which case the check will be performed on
 the CADR of the list."
-  (eq (nth-value 1 (find-symbol (symbol-name (cond ((symbolp symbol)
-                                                    symbol)
-                                                   ((eq (car symbol) 'setf)
-                                                    (cadr symbol))
-                                                   (t
-                                                    (error "Unknown symbol type: ~s" symbol))))
-                                package))
+  (eq (nth-value
+       1
+       (find-symbol
+        (symbol-name
+         (cond ((symbolp symbol)
+                symbol)
+               ((eq (car symbol) 'setf)
+                (cadr symbol))
+               (t (error "Unknown symbol type: ~s" symbol))))
+        package))
       :external))
 
 (defun specialisation-properties (class-name)
@@ -269,10 +287,10 @@ the CADR of the list."
           (cons :documentation (documentation cl 'type))
           (cons :slots         (load-slots cl))
           (cons :methods       (specialisation-properties cl))
-	  (cons :class-precedence-list (mapcar 'class-name (find-superclasses cl)))
-	  (cons :direct-superclasses (mapcar 'class-name (closer-mop:class-direct-superclasses cl)))
-	  (cons :direct-subclasses (mapcar 'class-name (closer-mop:class-direct-subclasses cl)))
-	  (cons :package (symbol-package class-name))
+          (cons :class-precedence-list (mapcar 'class-name (find-superclasses cl)))
+          (cons :direct-superclasses (mapcar 'class-name (closer-mop:class-direct-superclasses cl)))
+          (cons :direct-subclasses (mapcar 'class-name (closer-mop:class-direct-subclasses cl)))
+          (cons :package (symbol-package class-name))
           (cons :type :class))))
 
 (defun %annotate-function-properties (fn-properties classes)
@@ -296,20 +314,20 @@ the CADR of the list."
   (when (stringp text)
     (return-from concat-rich-text text))
   (let ((segments nil)
-	(segment nil))
+        (segment nil))
     (loop for word in text
-	  do (if (stringp word)
-		 (push word segment)
-		 ;; else, it is an "element"
-		 (destructuring-bind (el-type content) word
-		   (push (apply #'concatenate 'string (nreverse segment))
-			 segments)
-		   (setf segment nil)
-		   (push (list el-type (concat-rich-text content))
-			 segments)))
-	  finally (when segment
-		    (push (apply #'concatenate 'string (nreverse segment))
-			 segments)))
+          do (if (stringp word)
+                 (push word segment)
+                 ;; else, it is an "element"
+                 (destructuring-bind (el-type content) word
+                   (push (apply #'concatenate 'string (nreverse segment))
+                         segments)
+                   (setf segment nil)
+                   (push (list el-type (concat-rich-text content))
+                         segments)))
+          finally (when segment
+                    (push (apply #'concatenate 'string (nreverse segment))
+                          segments)))
     (nreverse segments)))
 
 (defun split-string-with-delimiter (string delimiter
@@ -323,30 +341,30 @@ the CADR of the list."
     (loop for start = 0 then (1+ pos)
           for pos   = (position-if predicate string :start start)
 
-	  ;; no more delimiter found
+          ;; no more delimiter found
           when (and (null pos) (not (= start l)))
             collect (subseq string start)
 
-	  ;; while delimiter found
+          ;; while delimiter found
           while pos
 
-	  ;;  some content found
+          ;;  some content found
           when (> pos start) collect (subseq string start pos)
-	    ;;  optionally keep delimiter
+            ;;  optionally keep delimiter
             when keep-delimiters collect (string (aref string pos)))))
 
 (defun list-lambda-list-args (lambda-list)
   "Takes a LAMBDA-LIST and returns the list of all the argument names."
   (loop for arg in lambda-list
-	unless (and (symbolp arg) (char-equal (aref (symbol-name arg) 0) #\&)) ;; special argument
-	  collect (cond
-		    ((symbolp arg) arg)
-		    ((and (listp arg) (listp (first arg)))
-		     ;; we assume a keyword arg
-		     (second (first arg)))
-		    ((listp arg)
-		     (first arg))
-		    (t (error "Could not read the argument name")))))
+        unless (and (symbolp arg) (char-equal (aref (symbol-name arg) 0) #\&)) ;; special argument
+          collect (cond
+                    ((symbolp arg) arg)
+                    ((and (listp arg) (listp (first arg)))
+                     ;; we assume a keyword arg
+                     (second (first arg)))
+                    ((listp arg)
+                     (first arg))
+                    (t (error "Could not read the argument name")))))
 
 ;; (list-lambda-list-args '(foo))
 ;; (list-lambda-list-args '(foo &optional bar))
