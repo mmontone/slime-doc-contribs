@@ -1,6 +1,6 @@
 # SLIME-DOC-CONTRIBS
 
-This repository contains two different SLIME contribs that extend Common Lisp documentation from Emacs. SLIME-HELP nd SLIME-INFO.
+This repository contains two different SLIME (The Superior Lisp Interaction Mode for Emacs) contribs that extend Common Lisp documentation from Emacs. SLIME-HELP nd SLIME-INFO.
 
 SLIME-HELP is inspired by helpful-mode, but for browsing Common Lisp documentation instead.
 
