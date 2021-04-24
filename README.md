@@ -48,6 +48,8 @@ slime-help-system	      M-x ... RET
 slime-help-variable	      M-x ... RET
    Display documentation about Common Lisp variable bound to
    SYMBOL-NAME.
+slime-help-packages
+   Browse all loaded packages
 ```
 
 ### SLIME-INFO

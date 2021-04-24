@@ -163,11 +163,11 @@
     (dolist (symbol-info symbol-infos)
       (case (cdr (assoc :type symbol-info))
         (:function (slime-help-function symbol-name))
-	(:generic-function (slime-help-generic-function symbol-name))
-	(:macro (slime-help-macro symbol-name))
+        (:generic-function (slime-help-generic-function symbol-name))
+        (:macro (slime-help-macro symbol-name))
         (:package (slime-help-package symbol-name))
         (:variable (slime-help-variable symbol-name))
-	(:class (slime-help-class symbol-name))
+        (:class (slime-help-class symbol-name))
         (t (error "TODO"))))))
 
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
@@ -224,41 +224,67 @@
 
         (insert (slime-help--heading-2 "Exported definitions"))
         (newline 2)
-	(cl-flet ((format-exported-definition
-		   (symbol-info)
-		   (insert (propertize (subseq (symbol-name (cdr (assoc :type symbol-info))) 1) 'face 'slime-help-type))
-          (insert " ")
-          (insert-button (format "%s" (cdr (assoc :name symbol-info)))
-                         'action (lambda (btn)
-                                   (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
-                         'follow-link t
-                         'help-echo "Describe symbol")
-          (newline)
-          (if (cdr (assoc :documentation symbol-info))
-              (insert (slime-help--first-line (cdr (assoc :documentation symbol-info))))
-            (insert "Not documented"))
-          (newline)
-          (insert (slime-help--horizontal-line))
-          (newline)))
-	  (let ((def-types '(("Variables" . :variable)
-				      ("Classes" . :class)
-				      ("Macros" . :macro)
-				      ("Functions" . :function)
-				      ("Generic functions" . :generic-function))))
-	    (dolist (def-type def-types)
-	      (let ((symbol-infos (remove-if-not (lambda (x)
-						    (equalp (cdr (assoc :type x)) (cdr def-type)))
-						 (cdr (assoc :external-symbols package-info)))))
-		(when symbol-infos
-		  (insert (slime-help--heading-3 (car def-type)))
-		  (newline 2)
-		  (dolist (symbol-info symbol-infos)
-		    (format-exported-definition symbol-info))
-		  (newline 2))))))
+        (cl-flet ((format-exported-definition
+                   (symbol-info)
+                   (insert (propertize (subseq (symbol-name (cdr (assoc :type symbol-info))) 1) 'face 'slime-help-type))
+                   (insert " ")
+                   (insert-button (format "%s" (cdr (assoc :name symbol-info)))
+                                  'action (lambda (btn)
+                                            (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
+                                  'follow-link t
+                                  'help-echo "Describe symbol")
+                   (newline)
+                   (if (cdr (assoc :documentation symbol-info))
+                       (insert (slime-help--first-line (cdr (assoc :documentation symbol-info))))
+                     (insert "Not documented"))
+                   (newline)
+                   (insert (slime-help--horizontal-line))
+                   (newline)))
+          (let ((def-types '(("Variables" . :variable)
+                             ("Classes" . :class)
+                             ("Macros" . :macro)
+                             ("Functions" . :function)
+                             ("Generic functions" . :generic-function))))
+            (dolist (def-type def-types)
+              (let ((symbol-infos (remove-if-not (lambda (x)
+                                                   (equalp (cdr (assoc :type x)) (cdr def-type)))
+                                                 (cdr (assoc :external-symbols package-info)))))
+                (when symbol-infos
+                  (insert (slime-help--heading-3 (car def-type)))
+                  (newline 2)
+                  (dolist (symbol-info symbol-infos)
+                    (format-exported-definition symbol-info))
+                  (newline 2))))))
         (slime-help--open-buffer)
         nil))))
 
 ;;(slime-help-package "ALEXANDRIA")
+
+(defun slime-help-packages ()
+  "Display information about Common Lisp packages."
+  (interactive)
+
+  (let ((buffer-name "*slime-help: COMMON LISP packages*"))
+    (when (get-buffer buffer-name)
+      (pop-to-buffer buffer-name)
+      (return-from slime-help-packages))
+    
+    (let* ((packages-info (slime-eval `(swank-help:read-emacs-packages-info)))
+           (buffer (get-buffer-create buffer-name)))
+      (with-current-buffer buffer
+	(dolist (package-info packages-info)
+	  (let ((package-name (cdr (assoc :name package-info))))
+	    (insert-button package-name
+			 'action (lambda (btn)
+				   (slime-help-package package-name))
+			 'follow-link t
+			 'help-echo "Describe package"))
+	  (newline)
+	  (when (cdr (assoc :documentation package-info))
+	    (insert (cdr (assoc :documentation package-info)))
+	    (newline)))
+        (slime-help--open-buffer)
+        nil))))
 
 (defun slime-help-function (symbol-name)
   "Display documentation about Common Lisp function bound to SYMBOL-NAME."
@@ -293,7 +319,7 @@
 (defun slime-help--funcallable (symbol-name symbol-info function-type)
   "Display documentation about Common Lisp the funcallable FUNCTION-TYPE to SYMBOL-NAME."
   (let* ((function-type-name (subseq (symbol-name function-type) 1))
-	 (buffer-name (format "*slime-help: %s %s*" symbol-name function-type-name)))
+         (buffer-name (format "*slime-help: %s %s*" symbol-name function-type-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
       (return-from slime-help-function))
@@ -427,8 +453,8 @@
         (newline 2)
         (slime-help--insert-documentation symbol-info)
         (newline 2)
-	
-	;; buttons
+
+        ;; buttons
         (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
@@ -447,35 +473,35 @@
         (insert (slime-help--button "Lookup in manuals"
                                     'slime-help-lookup-in-manuals-button
                                     'symbol (cdr (assoc :symbol symbol-info))))
-	(newline 2)
-	
-	(insert (slime-help--heading-2 "Direct superclasses"))
-	(newline 2)
-	(dolist (class-name (cdr (assoc :direct-superclasses symbol-info)))
-	  (insert-button (symbol-name class-name)
-			 'action (lambda (btn)
-				   (slime-help-class (symbol-name class-name)))
-			 'follow-link t
-			 'help-echo "Describe class")
-	  (insert " "))
-	(newline 2)
+        (newline 2)
 
-	(insert (slime-help--heading-2 "Slots"))
-	(newline 2)
-	(dolist (slot (cdr (assoc :slots symbol-info)))
-	  (insert (propertize (cdr (assoc :name slot)) 'face 'bold))
-	  (newline)
-	  (when (cdr (assoc :documentation slot))
-	    (insert (cdr (assoc :documentation slot)))
-	    (newline)))
-	(newline 2)
+        (insert (slime-help--heading-2 "Direct superclasses"))
+        (newline 2)
+        (dolist (class-name (cdr (assoc :direct-superclasses symbol-info)))
+          (insert-button (symbol-name class-name)
+                         'action (lambda (btn)
+                                   (slime-help-class (symbol-name class-name)))
+                         'follow-link t
+                         'help-echo "Describe class")
+          (insert " "))
+        (newline 2)
 
-	(insert (slime-help--heading-2 "Methods"))
+        (insert (slime-help--heading-2 "Slots"))
+        (newline 2)
+        (dolist (slot (cdr (assoc :slots symbol-info)))
+          (insert (propertize (cdr (assoc :name slot)) 'face 'bold))
+          (newline)
+          (when (cdr (assoc :documentation slot))
+            (insert (cdr (assoc :documentation slot)))
+            (newline)))
+        (newline 2)
+
+        (insert (slime-help--heading-2 "Methods"))
         (newline 2)
         (insert (slime-help--horizontal-line))
         (newline)
         (dolist (symbol-info (cdr (assoc :methods symbol-info)))
-	  (insert-button (format "%s" (cdr (assoc :name symbol-info)))
+          (insert-button (format "%s" (cdr (assoc :name symbol-info)))
                          'action (lambda (btn)
                                    (slime-help-symbol (prin1-to-string (cdr (assoc :name symbol-info)))))
                          'follow-link t
@@ -487,7 +513,7 @@
           (newline)
           (insert (slime-help--horizontal-line))
           (newline))
-	
+
         (slime-help--open-buffer)
         nil))))
 
@@ -561,7 +587,7 @@
 
         (newline 2)
 
-	(cl-flet ((browse-system (btn)
+        (cl-flet ((browse-system (btn)
                                  (slime-browse-system system-name)))
           (insert-button "Browse"
                          'action (function browse-system)
@@ -569,28 +595,28 @@
                          'help-echo "Browse system"))
 
         (insert " ")
-		
-	(when (not (cdr (assoc :loaded-p system-info)))
-	  (cl-flet ((load-system (btn)
-				 (slime-load-system system-name)))
-	    (insert-button "Load"
-			   'action (function load-system)
-			   'follow-link t
-			   'help-echo "Load system")))
 
-	(when (and (cdr (assoc :loaded-p system-info))
-		   (cdr (assoc :packages system-info)))
-	  (newline 2)
-	  (insert (slime-help--heading-2 "Packages"))
-	  (newline 2)
-	  (dolist (package-name (cdr (assoc :packages system-info)))
-	    (insert-button package-name
-			   'action (lambda (btn)
-				     (slime-help-package package-name))
-			   'follow-link t
-			   'help-echo "Describe package")
-	    (insert " ")))
-	
+        (when (not (cdr (assoc :loaded-p system-info)))
+          (cl-flet ((load-system (btn)
+                                 (slime-load-system system-name)))
+            (insert-button "Load"
+                           'action (function load-system)
+                           'follow-link t
+                           'help-echo "Load system")))
+
+        (when (and (cdr (assoc :loaded-p system-info))
+                   (cdr (assoc :packages system-info)))
+          (newline 2)
+          (insert (slime-help--heading-2 "Packages"))
+          (newline 2)
+          (dolist (package-name (cdr (assoc :packages system-info)))
+            (insert-button package-name
+                           'action (lambda (btn)
+                                     (slime-help-package package-name))
+                           'follow-link t
+                           'help-echo "Describe package")
+            (insert " ")))
+
         (setq buffer-read-only t)
         (local-set-key "q" 'slime-help--kill-current-buffer)
         (buffer-disable-undo)

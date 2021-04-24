@@ -5,7 +5,8 @@
   (:export
    :read-emacs-symbol-info
    :read-emacs-package-info
-   :read-emacs-system-info))
+   :read-emacs-system-info
+   :read-emacs-packages-info))
 
 (in-package :swank-help)
 
@@ -35,17 +36,19 @@
 	  (info-for-emacs info))
 	(mapcar 'info-for-emacs infos))))
 
-(defun read-emacs-package-info (package-name)
-  (let ((package (or (find-package package-name)
+(defun read-emacs-package-info (package-name &optional shallow)
+  (let ((package (or (and (typep package-name 'package)
+			  package-name)
+		     (find-package package-name)
                      (error "Package not found: ~a" package-name)))
         symbol-infos)
     (do-external-symbols (symbol package)
       (alexandria:when-let ((symbol-info (read-emacs-symbol-info symbol nil t)))
 	(push symbol-info symbol-infos)))
     (list (cons :type :package)
-          (cons :name package-name)
+          (cons :name (package-name package))
           (cons :documentation (documentation package t))
-          (cons :external-symbols (apply #'append symbol-infos)))))
+          (unless shallow (cons :external-symbols (apply #'append symbol-infos))))))
 
 (defun read-emacs-system-info (system-name)
   (let ((system (asdf:find-system system-name)))
@@ -55,5 +58,10 @@
           (cons :dependencies (asdf:system-depends-on system))
 	  (cons :loaded-p (asdf:component-loaded-p system-name))
 	  (cons :packages (mapcar 'package-name (asdf-system-packages system-name))))))
+
+(defun read-emacs-packages-info ()
+  (mapcar (lambda (package)
+	    (read-emacs-package-info package t))
+	  (list-all-packages)))
 
 (provide :swank-help)
