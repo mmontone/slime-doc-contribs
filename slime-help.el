@@ -154,13 +154,6 @@
       (insert (propertize (second word) 'face 'slime-help-variable)))
      (t (error "Don't know how to format")))))
 
-(defun slime-help-symbol-kind (symbol-name kind)
-  (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name))))))
-    (case (cdr (assoc :type symbol-info))
-      (:function (slime-help-function symbol-name))
-      (:package (slime-help-package symbol-name))
-      (:variable (slime-help-variable symbol-name)))))
-
 (defun slime-help-symbol (symbol-name)
   "Open a help buffer for each kind of SYMBOL-NAME."
   (interactive (list (slime-read-symbol-name "Describe symbol: ")))
@@ -170,11 +163,14 @@
     (dolist (symbol-info symbol-infos)
       (case (cdr (assoc :type symbol-info))
         (:function (slime-help-function symbol-name))
+	(:generic-function (slime-help-generic-function symbol-name))
+	(:macro (slime-help-macro symbol-name))
         (:package (slime-help-package symbol-name))
         (:variable (slime-help-variable symbol-name))
         (t (error "TODO"))))))
 
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
+;;(slime-help-symbol "ALEXANDRIA:WITH-GENSYMS")
 
 (defun slime-help--first-line (string)
   "Return the first line of the `STRING'."
@@ -254,19 +250,45 @@
   (interactive (list (slime-read-symbol-name "Describe function: ")))
   (when (not symbol-name)
     (error "No symbol given"))
+  (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :function))))
+    (when (null symbol-info)
+      (error "Could not read symbol informartion: %s" symbol-name))
+    (slime-help--funcallable symbol-name symbol-info :function)))
 
-  (let ((buffer-name (format "*slime-help: %s function*" symbol-name)))
+(defun slime-help-macro (symbol-name)
+  "Display documentation about Common Lisp macro bound to SYMBOL-NAME."
+  (interactive (list (slime-read-symbol-name "Describe macro: ")))
+  (when (not symbol-name)
+    (error "No symbol given"))
+  (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :macro))))
+    (when (null symbol-info)
+      (error "Could not read symbol information: %s" symbol-name))
+    (slime-help--funcallable symbol-name symbol-info :macro)))
+
+(defun slime-help-generic-function (symbol-name)
+  "Display documentation about Common Lisp generic function bound to SYMBOL-NAME."
+  (interactive (list (slime-read-symbol-name "Describe generic function: ")))
+  (when (not symbol-name)
+    (error "No symbol given"))
+  (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :generic-function))))
+    (when (null symbol-info)
+      (error "Could not read symbol informartion: %s" symbol-name))
+    (slime-help--funcallable symbol-name symbol-info :generic-function)))
+
+(defun slime-help--funcallable (symbol-name symbol-info function-type)
+  "Display documentation about Common Lisp the funcallable FUNCTION-TYPE to SYMBOL-NAME."
+  (let* ((function-type-name (subseq (symbol-name function-type) 1))
+	 (buffer-name (format "*slime-help: %s %s*" symbol-name function-type-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
       (return-from slime-help-function))
 
-    (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :function)))
-           (package-name (cdr (assoc :package symbol-info)))
+    (let* ((package-name (cdr (assoc :package symbol-info)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
         (insert (slime-help--heading-1 (cdr (assoc :name symbol-info))))
         (newline 2)
-        (insert (format "This is a FUNCTION in package "))
+        (insert (format "This is a %s in package " function-type-name))
         (insert-button package-name
                        'action (lambda (btn)
                                  (slime-help-package package-name))
@@ -309,6 +331,7 @@
 
 ;;(slime-help-function "ALEXANDRIA:FLATTEN")
 ;;(slime-help-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
+;;(slime-help-macro "ALEXANDRIA:WITH-GENSYMS")
 
 (defun slime-help-variable (symbol-name)
   "Display documentation about Common Lisp variable bound to SYMBOL-NAME."
