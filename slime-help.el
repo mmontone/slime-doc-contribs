@@ -414,6 +414,27 @@
         (slime-help--insert-documentation symbol-info)
         (newline 2)
 	
+	;; buttons
+        (cl-flet ((goto-source (btn)
+                               (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+          (insert-button "Source"
+                         'action (function goto-source)
+                         'follow-link t
+                         'help-echo "Go to definition source code"))
+        (insert " ")
+        (cl-flet ((browse-references (btn)
+                                     (slime-who-references (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+          (insert-button "References"
+                         'action (function browse-references)
+                         'follow-link t
+                         'help-echo "Browse references"))
+        (insert " ")
+
+        (insert (slime-help--button "Lookup in manuals"
+                                    'slime-help-lookup-in-manuals-button
+                                    'symbol (cdr (assoc :symbol symbol-info))))
+	(newline 2)
+	
 	(insert (slime-help--heading-2 "Direct superclasses"))
 	(newline 2)
 	(dolist (class-name (cdr (assoc :direct-superclasses symbol-info)))
@@ -434,26 +455,25 @@
 	    (insert (cdr (assoc :documentation slot)))
 	    (newline)))
 	(newline 2)
-	
-	;; buttons
-        (cl-flet ((goto-source (btn)
-                               (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
-          (insert-button "Source"
-                         'action (function goto-source)
-                         'follow-link t
-                         'help-echo "Go to definition source code"))
-        (insert " ")
-        (cl-flet ((browse-references (btn)
-                                     (slime-who-references (prin1-to-string (cdr (assoc :symbol symbol-info))))))
-          (insert-button "References"
-                         'action (function browse-references)
-                         'follow-link t
-                         'help-echo "Browse references"))
-        (insert " ")
 
-        (insert (slime-help--button "Lookup in manuals"
-                                    'slime-help-lookup-in-manuals-button
-                                    'symbol (cdr (assoc :symbol symbol-info))))
+	(insert (slime-help--heading-2 "Methods"))
+        (newline 2)
+        (insert (slime-help--horizontal-line))
+        (newline)
+        (dolist (symbol-info (cdr (assoc :methods symbol-info)))
+	  (insert-button (format "%s" (cdr (assoc :name symbol-info)))
+                         'action (lambda (btn)
+                                   (slime-help-symbol (prin1-to-string (cdr (assoc :name symbol-info)))))
+                         'follow-link t
+                         'help-echo "Describe symbol")
+          (newline)
+          (if (cdr (assoc :documentation symbol-info))
+              (insert (slime-help--first-line (cdr (assoc :documentation symbol-info))))
+            (insert "Not documented"))
+          (newline)
+          (insert (slime-help--horizontal-line))
+          (newline))
+	
         (slime-help--open-buffer)
         nil))))
 
