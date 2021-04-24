@@ -190,7 +190,7 @@ the CADR of the list."
               for symbol = (specialise->symbol v)
               when (and (not (member symbol ignored))
                         (symbol-external-p symbol (symbol-package (class-name class))))
-                collect (list (cons :name symbol)))
+                collect (list (cons :name symbol) (cons :documentation (documentation symbol 'function))))
             #'string< :key (alexandria:compose #'princ-to-string #'assoc-name)))))
 
 (defun %ensure-external (symbol)
