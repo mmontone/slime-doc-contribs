@@ -19,7 +19,7 @@
   (when (aget info :documentation)
     (push (cons :parsed-documentation
 		(parse-docstring (aget info :documentation)
-				 (when (member (aget info :type) '(:function :generic-function))
+				 (when (member (aget info :type) '(:function :generic-function :macro))
 				   (list-lambda-list-args
 				    (aget info :arglist)))))
 	  info))
