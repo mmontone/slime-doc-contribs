@@ -8,6 +8,8 @@ SLIME-INFO uses Emacs info-mode for displaying Common Lisp documentation.
 
 NOTE THAT THIS IS VERY MUCH WORK IN PROGRESS AT THIS MOMENT.
 
+![slime-help](slime-help.png "slime-help screenshot")
+
 ## Install
 
 Load `swank` and add this repository path to `swank::*load-path*`, in your Lisp compiler init file (~/.sbclrc if using SBCL):
