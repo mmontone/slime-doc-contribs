@@ -167,6 +167,19 @@ not available is DATA."
     #+ccl((ccl::reader-method) (cadr (assoc :method (cdar spec))))
     (t nil)))
 
+(defun symbol-external-p (symbol &optional (package (symbol-package symbol)))
+  "Return non-NIL if SYMBOL is external in PACKAGE. SYMBOL may be either
+a symbol, or a SETF form, in which case the check will be performed on
+the CADR of the list."
+  (eq (nth-value 1 (find-symbol (symbol-name (cond ((symbolp symbol)
+                                                    symbol)
+                                                   ((eq (car symbol) 'setf)
+                                                    (cadr symbol))
+                                                   (t
+                                                    (error "Unknown symbol type: ~s" symbol))))
+                                package))
+      :external))
+
 (defun specialisation-properties (class-name)
   (let* ((ignored '(initialize-instance))
          (class (if (symbolp class-name) (find-class class-name) class-name))
@@ -176,7 +189,7 @@ not available is DATA."
               for v in spec
               for symbol = (specialise->symbol v)
               when (and (not (member symbol ignored))
-                        (swank::symbol-external-p symbol (symbol-package (class-name class))))
+                        (symbol-external-p symbol (symbol-package (class-name class))))
                 collect (list (cons :name symbol)))
             #'string< :key (alexandria:compose #'princ-to-string #'assoc-name)))))
 
@@ -247,8 +260,10 @@ not available is DATA."
     (list (cons :name          (class-name cl))
           (cons :documentation (documentation cl 'type))
           (cons :slots         (load-slots cl))
-          ;; (cons :methods       (specialisation-properties cl)) TODO: fix
-
+          (cons :methods       (specialisation-properties cl))
+	  (cons :class-precedence-list (mapcar 'class-name (find-superclasses cl)))
+	  (cons :direct-superclasses (mapcar 'class-name (closer-mop:class-direct-superclasses cl)))
+	  (cons :direct-subclasses (mapcar 'class-name (closer-mop:class-direct-subclasses cl)))
           (cons :type :class))))
 
 (defun %annotate-function-properties (fn-properties classes)
