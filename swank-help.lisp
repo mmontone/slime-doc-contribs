@@ -27,8 +27,8 @@
   (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))
   info)
 
-(defun read-emacs-symbol-info (symbol &optional kind)
-  (let ((infos (symbol-properties symbol)))
+(defun read-emacs-symbol-info (symbol &optional kind shallow)
+  (let ((infos (symbol-properties symbol shallow)))
     (if kind
 	(alexandria:when-let ((info (find kind infos :key (lambda (info)
 							    (aget info :type)))))
@@ -40,7 +40,7 @@
                      (error "Package not found: ~a" package-name)))
         symbol-infos)
     (do-external-symbols (symbol package)
-      (alexandria:when-let ((symbol-info (read-emacs-symbol-info symbol)))
+      (alexandria:when-let ((symbol-info (read-emacs-symbol-info symbol nil t)))
 	(push symbol-info symbol-infos)))
     (list (cons :type :package)
           (cons :name package-name)
