@@ -413,6 +413,29 @@
         (newline 2)
         (slime-help--insert-documentation symbol-info)
         (newline 2)
+	
+	(insert (slime-help--heading-2 "Direct superclasses"))
+	(newline 2)
+	(dolist (class-name (cdr (assoc :direct-superclasses symbol-info)))
+	  (insert-button (symbol-name class-name)
+			 'action (lambda (btn)
+				   (slime-help-class (symbol-name class-name)))
+			 'follow-link t
+			 'help-echo "Describe class")
+	  (insert " "))
+	(newline 2)
+
+	(insert (slime-help--heading-2 "Slots"))
+	(newline 2)
+	(dolist (slot (cdr (assoc :slots symbol-info)))
+	  (insert (propertize (cdr (assoc :name slot)) 'face 'bold))
+	  (newline)
+	  (when (cdr (assoc :documentation slot))
+	    (insert (cdr (assoc :documentation slot)))
+	    (newline)))
+	(newline 2)
+	
+	;; buttons
         (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
