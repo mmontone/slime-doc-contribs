@@ -167,6 +167,7 @@
 	(:macro (slime-help-macro symbol-name))
         (:package (slime-help-package symbol-name))
         (:variable (slime-help-variable symbol-name))
+	(:class (slime-help-class symbol-name))
         (t (error "TODO"))))))
 
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
@@ -384,6 +385,56 @@
 
 ;; (slime-help-variable "*STANDARD-OUTPUT*")
 
+(defun slime-help-class (symbol-name)
+  "Display documentation about Common Lisp class bound to SYMBOL-NAME."
+  (interactive (list (slime-read-symbol-name "Describe class: ")))
+  (when (not symbol-name)
+    (error "No symbol given"))
+
+  (let ((buffer-name (format "*slime-help: %s class*" symbol-name)))
+    (when (get-buffer buffer-name)
+      (pop-to-buffer buffer-name)
+      (return-from slime-help-function))
+
+    (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :class)))
+           (package-name (cdr (assoc :package symbol-info)))
+           (buffer (get-buffer-create buffer-name)))
+      (when (null symbol-info)
+        (error "Could not read class info"))
+      (with-current-buffer buffer
+        (insert (slime-help--heading-1 (cdr (assoc :name symbol-info))))
+        (newline 2)
+        (insert (format "This is a CLASS in package "))
+        (insert-button package-name
+                       'action (lambda (btn)
+                                 (slime-help-package package-name))
+                       'follow-link t
+                       'help-echo "Describe package")
+        (newline 2)
+        (slime-help--insert-documentation symbol-info)
+        (newline 2)
+        (cl-flet ((goto-source (btn)
+                               (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+          (insert-button "Source"
+                         'action (function goto-source)
+                         'follow-link t
+                         'help-echo "Go to definition source code"))
+        (insert " ")
+        (cl-flet ((browse-references (btn)
+                                     (slime-who-references (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+          (insert-button "References"
+                         'action (function browse-references)
+                         'follow-link t
+                         'help-echo "Browse references"))
+        (insert " ")
+
+        (insert (slime-help--button "Lookup in manuals"
+                                    'slime-help-lookup-in-manuals-button
+                                    'symbol (cdr (assoc :symbol symbol-info))))
+        (slime-help--open-buffer)
+        nil))))
+
+;;(slime-help-class "HUNCHENTOOT:ACCEPTOR")
 
 ;; This was copied from help.el
 (defun slime-help--highlight-syntax (source &optional mode)

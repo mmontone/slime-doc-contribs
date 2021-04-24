@@ -272,6 +272,7 @@ the CADR of the list."
 	  (cons :class-precedence-list (mapcar 'class-name (find-superclasses cl)))
 	  (cons :direct-superclasses (mapcar 'class-name (closer-mop:class-direct-superclasses cl)))
 	  (cons :direct-subclasses (mapcar 'class-name (closer-mop:class-direct-subclasses cl)))
+	  (cons :package (symbol-package class-name))
           (cons :type :class))))
 
 (defun %annotate-function-properties (fn-properties classes)
