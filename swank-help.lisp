@@ -52,6 +52,8 @@
     (list (cons :type :system)
           (cons :name system-name)
           (cons :documentation (asdf:system-description system))
-          (cons :dependencies (asdf:system-depends-on system)))))
+          (cons :dependencies (asdf:system-depends-on system))
+	  (cons :loaded-p (swank:asdf-system-loaded-p system-name))
+	  (cons :packages (mapcar 'package-name (asdf-system-packages system-name))))))
 
 (provide :swank-help)

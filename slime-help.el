@@ -561,16 +561,7 @@
 
         (newline 2)
 
-        (cl-flet ((open-system (btn)
-                               (slime-open-system system-name)))
-          (insert-button "Open"
-                         'action (function open-system)
-                         'follow-link t
-                         'help-echo "Open system"))
-
-        (insert " ")
-
-        (cl-flet ((browse-system (btn)
+	(cl-flet ((browse-system (btn)
                                  (slime-browse-system system-name)))
           (insert-button "Browse"
                          'action (function browse-system)
@@ -578,16 +569,28 @@
                          'help-echo "Browse system"))
 
         (insert " ")
+		
+	(when (not (cdr (assoc :loaded-p system-info)))
+	  (cl-flet ((load-system (btn)
+				 (slime-load-system system-name)))
+	    (insert-button "Load"
+			   'action (function load-system)
+			   'follow-link t
+			   'help-echo "Load system")))
 
-        (cl-flet ((load-system (btn)
-                               (slime-load-system system-name)))
-          (insert-button "Load"
-                         'action (function load-system)
-                         'follow-link t
-                         'help-echo "Load system"))
-
-        (newline)
-
+	(when (and (cdr (assoc :loaded-p system-info))
+		   (cdr (assoc :packages system-info)))
+	  (newline 2)
+	  (insert (slime-help--heading-2 "Packages"))
+	  (newline 2)
+	  (dolist (package-name (cdr (assoc :packages system-info)))
+	    (insert-button package-name
+			   'action (lambda (btn)
+				     (slime-help-package package-name))
+			   'follow-link t
+			   'help-echo "Describe package")
+	    (insert " ")))
+	
         (setq buffer-read-only t)
         (local-set-key "q" 'slime-help--kill-current-buffer)
         (buffer-disable-undo)

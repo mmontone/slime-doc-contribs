@@ -235,38 +235,6 @@
          symbols s
          :package package)))))
 
-(defun location-pathname (location)
-  (pathname
-   (cadr
-    (or (find :file (cdr location)
-              :key 'car)
-        (find :buffer-and-file (cdr location)
-              :key 'car)
-        ))))
-
-(defvar *package-source-locations* (make-hash-table)
-  "A cache of packages source locations")
-
-(defun package-source-location (package)
-  (or (gethash package *package-source-locations*)
-      (setf (gethash package *package-source-locations*)
-            (swank/backend:find-source-location package))))
-
-;; This function finds the packages defined from an ASDF, approximatly. And it is very slow.
-(defun asdf-system-packages (system)
-  (let* ((asdf-system (if (or (symbolp system)
-                              (stringp system))
-                          (asdf:find-system system)
-                          system))
-         (system-source-directory (asdf:system-source-directory asdf-system)))
-    (loop for package in (list-all-packages)
-          for location := (package-source-location package)
-          when (and (eql (car location) :location)
-                    (uiop/pathname:subpathp
-                     (location-pathname location)
-                     system-source-directory))
-            collect package)))
-
 (defun render-texinfo-node-for-package (package stream)
   (flet ((fmt (str &rest args)
            (apply #'format stream str args))
@@ -387,7 +355,8 @@ is replaced with replacement."
          (ln ()
            (terpri stream)))
     (let* ((system-name (asdf:component-name asdf-system))
-           (system-packages (asdf-system-packages asdf-system))
+           (system-packages (when (swank:asdf-system-loaded-p asdf-system)
+			      (def-properties:asdf-system-packages asdf-system)))
            (readme-file (find "README"
                               (uiop/filesystem:directory-files (asdf:system-source-directory asdf-system))
                               :key 'pathname-name

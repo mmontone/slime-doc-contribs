@@ -13,12 +13,13 @@
    :package-properties
    :parse-docstring
    :list-lambda-list-args
-
+   :asdf-system-packages
+   
    :symbol-kinds
    :symbol-kind-p
    :symbol-variable-p
    :symbol-function-p
-   :symbol-macro-p
+   
    :symbol-generic-function-p
    :symbol-type-p
    :symbol-class-p
@@ -405,5 +406,39 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
 ;; asdfasd" nil)
 ;;       (parse-docstring "lala :lolo" nil)
 ;;       (parse-docstring "*communication-style*" nil)
+
+(defun location-pathname (location)
+  (pathname
+   (cadr
+    (or (find :file (cdr location)
+              :key 'car)
+        (find :buffer-and-file (cdr location)
+              :key 'car)
+        ))))
+
+(defvar *package-source-locations* (make-hash-table)
+  "A cache of packages source locations")
+
+(defun package-source-location (package)
+  (or (gethash package *package-source-locations*)
+      (setf (gethash package *package-source-locations*)
+            (swank/backend:find-source-location package))))
+
+;; This function finds the packages defined from an ASDF, approximatly. And it is very slow.
+(defun asdf-system-packages (system)
+  (when (not (swank:asdf-system-loaded-p system))
+    (return-from asdf-system-packages nil))
+  (let* ((asdf-system (if (or (symbolp system)
+                              (stringp system))
+                          (asdf:find-system system)
+                          system))
+         (system-source-directory (asdf:system-source-directory asdf-system)))
+    (loop for package in (list-all-packages)
+          for location := (package-source-location package)
+          when (and (eql (car location) :location)
+                    (uiop/pathname:subpathp
+                     (location-pathname location)
+                     system-source-directory))
+            collect package)))
 
 (provide :def-properties)
