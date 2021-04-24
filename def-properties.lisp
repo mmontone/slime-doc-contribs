@@ -18,6 +18,7 @@
    :symbol-kind-p
    :symbol-variable-p
    :symbol-function-p
+   :symbol-macro-p
    :symbol-generic-function-p
    :symbol-type-p
    :symbol-class-p
@@ -43,6 +44,9 @@
 (defun symbol-function-p (symbol)
   (symbol-kind-p symbol :function))
 
+(defun symbol-macro-p (symbol)
+  (symbol-kind-p symbol :macro))
+
 (defun symbol-generic-function-p (symbol)
   (symbol-kind-p symbol :generic-function))
 
@@ -61,6 +65,10 @@
 If TYPE is specified, then SYMBOL is treated as the given TYPE (variable, function, package, etc)."
   (let (properties)
     (when (symbol-function-p symbol)
+      (push (function-properties symbol) properties))
+    (when (symbol-generic-function-p symbol)
+      (push (function-properties symbol) properties))
+    (when (symbol-macro-p symbol)
       (push (function-properties symbol) properties))
     (when (symbol-variable-p symbol)
       (push (variable-properties symbol) properties))
