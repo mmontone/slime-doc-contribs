@@ -377,13 +377,15 @@
                          'follow-link t
                          'help-echo "Go to definition source code"))
         (insert " ")
-        (cl-flet ((browse-references (btn)
+
+	(cl-flet ((browse-references (btn)
                                      (slime-who-calls (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "References"
                          'action (function browse-references)
                          'follow-link t
                          'help-echo "Browse references"))
         (insert " ")
+	
         (cl-flet ((disassemble-function (btn)
                                         (slime-disassemble-symbol (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Disassemble"
@@ -445,6 +447,22 @@
                          'action (function browse-references)
                          'follow-link t
                          'help-echo "Browse references"))
+        (insert " ")
+
+	(cl-flet ((browse-binders (btn)
+				  (slime-who-binds (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+          (insert-button "Binders"
+                         'action (function browse-binders)
+                         'follow-link t
+                         'help-echo "Show all known binders of the global variable"))
+        (insert " ")
+
+	(cl-flet ((browse-setters (btn)
+				  (slime-who-sets (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+          (insert-button "Setters"
+                         'action (function browse-setters)
+                         'follow-link t
+                         'help-echo "Show all known setters of the global variable"))
         (insert " ")
 
         (insert (slime-help--button "Lookup in manuals"
