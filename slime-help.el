@@ -193,6 +193,7 @@
   (kill-buffer (current-buffer)))
 
 (defun slime-help-kill-all-buffers ()
+  "Kill all slime-help buffers at once."
   (interactive)
   (mapcar 'kill-buffer
 	  (remove-if-not
@@ -522,8 +523,14 @@
 		(newline))))
           (newline))
 
-	(let ((methods (cdr (assoc :methods symbol-info))))
+	(let ((methods-start (point))
+	      (methods (cdr (assoc :methods symbol-info))))
           (insert (slime-help--heading-2 "Methods"))
+	  (make-button methods-start (point)
+		       'action (lambda (btn)
+				 (goto-char methods-start)
+				 (outline-toggle-children))
+		       'follow-link t)
           (newline 2)
 	  (if (zerop (length methods))
 	      (insert "No methods")
@@ -542,6 +549,9 @@
               (newline))))
 
         (slime-help--open-buffer)
+	(setq outline-regexp "Methods")
+	(outline-minor-mode)
+	(outline-hide-body)
         nil))))
 
 ;;(slime-help-class "HUNCHENTOOT:ACCEPTOR")
