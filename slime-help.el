@@ -169,7 +169,11 @@
      ((and (listp word) (eql (first word) :key))
       (insert (propertize (second word) 'face 'slime-help-keyword)))
      ((and (listp word) (eql (first word) :var))
-      (insert (propertize (second word) 'face 'slime-help-variable)))
+      (insert-button (second word)
+		     'action (lambda (btn)
+			       (slime-help-variable (format "%s::%s" package (second word))))
+		     'follow-link t
+		     'help-echo "Describe variable"))
      (t (error "Don't know how to format")))))
 
 (defun slime-help-symbol (symbol-name)
