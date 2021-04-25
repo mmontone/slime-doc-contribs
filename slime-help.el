@@ -550,9 +550,6 @@
               (newline))))
 
         (slime-help--open-buffer)
-	(setq outline-regexp "Methods")
-	(outline-minor-mode)
-	(outline-hide-body)
         nil))))
 
 ;;(slime-help-class "HUNCHENTOOT:ACCEPTOR")
