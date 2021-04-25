@@ -333,7 +333,11 @@
   (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :generic-function))))
     (when (null symbol-info)
       (error "Could not read symbol informartion: %s" symbol-name))
-    (slime-help--funcallable symbol-name symbol-info :generic-function)))
+    (slime-help--funcallable symbol-name symbol-info :generic-function)
+
+    ;; TODO: display specializing methods
+    ;; Look at: (slime-find-definitions "CL:PRINT-OBJECT")
+    ))
 
 (defun slime-help--funcallable (symbol-name symbol-info function-type)
   "Display documentation about Common Lisp the funcallable FUNCTION-TYPE to SYMBOL-NAME."
@@ -511,6 +515,9 @@
           (insert " "))
         (newline 2)
 
+	;; TODO: show a collapsable (outline-mode?) section with more information about the class
+	;; like class descendants and list of subclasses
+
 	(let ((slots (cdr (assoc :slots symbol-info))))
           (insert (slime-help--heading-2 "Slots"))
           (newline 2)
@@ -527,7 +534,7 @@
 	(let ((methods-start (point))
 	      (methods (cdr (assoc :methods symbol-info))))
           (insert (slime-help--heading-2 "Methods"))
-	  (make-button methods-start (point)
+	  (make-text-button methods-start (point)
 		       'action (lambda (btn)
 				 (goto-char methods-start)
 				 (outline-toggle-children))
@@ -548,8 +555,14 @@
               (newline)
               (insert (slime-help--horizontal-line))
               (newline))))
-
+	
+	;; Outlines configuration
+	;;(setq outline-regexp "Methods")
+	;;(outline-minor-mode)
+	;;(outline-hide-body)
+	
         (slime-help--open-buffer)
+	
         nil))))
 
 ;;(slime-help-class "HUNCHENTOOT:ACCEPTOR")
