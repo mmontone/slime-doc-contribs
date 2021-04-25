@@ -1,7 +1,7 @@
 (require :def-properties (merge-pathnames #p"def-properties.lisp" (uiop/pathname:pathname-directory-pathname *load-pathname*)))
 
 (defpackage :swank-help
-  (:use :cl :swank :def-properties)
+  (:use :cl :def-properties)
   (:export
    :read-emacs-symbol-info
    :read-emacs-package-info

@@ -50,6 +50,11 @@
   "Face for type in Slime help"
   :group 'slime-help-faces)
 
+(defface slime-help-apropos-label
+  '((t :weight bold))
+  "Slime help face for apropos items"
+  :group 'slime-help-faces)
+
 (defun slime-help--heading-1 (text)
   (propertize text 'face 'slime-help-heading-1))
 
@@ -627,11 +632,80 @@
 
 ;;(slime-help-system "alexandria")
 
-(defun slime-help-apropos ()
-  (debug "TODO"))
+(defun slime-help-print-apropos (plists)
+  (dolist (plist plists)
+    (let ((designator (plist-get plist :designator)))
+      (cl-assert designator)
+      (slime-insert-propertized `(face slime-apropos-symbol) designator))
+    (terpri)
+    (cl-loop for (prop value) on plist by #'cddr
+             unless (eq prop :designator) do
+             (let ((namespace (cadr (or (assq prop slime-apropos-namespaces)
+                                        (error "Unknown property: %S" prop))))
+                   (start (point)))
+               (princ "  ")
+               (slime-insert-propertized `(face slime-help-apropos-label) namespace)
+	       (princ ": ")
+               (princ (cl-etypecase value
+                        (string value)
+                        ((member nil :not-documented) "(not documented)")))
+	       (let ((designator (plist-get plist :designator)))
+		 (add-text-properties
+		  start (point)
+		  (list 'type prop
+			'action (lambda (btn) (slime-help-symbol designator))
+			'weight 'bold
+			'button t
+			'apropos-label namespace
+			'item designator)))
+               (terpri)))))
+
+(defun slime-help-show-apropos (plists string package summary)
+  (if (null plists)
+      (message "No apropos matches for %S" string)
+    (slime-with-popup-buffer ((slime-buffer-name :apropos)
+                              :package package :connection t
+                              :mode 'apropos-mode)
+      (if (boundp 'header-line-format)
+          (setq header-line-format summary)
+        (insert summary "\n\n"))
+      (slime-set-truncate-lines)
+      (slime-help-print-apropos plists)
+      (set-syntax-table lisp-mode-syntax-table)
+      (goto-char (point-min)))))
+
+(defun slime-help-apropos (string &optional only-external-p package
+                             case-sensitive-p)
+  "Show all bound symbols whose names match STRING. With prefix
+arg, you're interactively asked for parameters of the search."
+  (interactive
+   (if current-prefix-arg
+       (list (read-string "SLIME Apropos: ")
+             (y-or-n-p "External symbols only? ")
+             (let ((pkg (slime-read-package-name "Package: ")))
+               (if (string= pkg "") nil pkg))
+             (y-or-n-p "Case-sensitive? "))
+     (list (read-string "SLIME Apropos: ") t nil nil)))
+  (let ((buffer-package (or package (slime-current-package))))
+    (slime-eval-async
+        `(swank:apropos-list-for-emacs ,string ,only-external-p
+                                       ,case-sensitive-p ',package)
+      (slime-rcurry #'slime-help-show-apropos string buffer-package
+                    (slime-apropos-summary string case-sensitive-p
+                                           package only-external-p)))))
 
 (defun slime-help-apropos-all ()
-  (debug "TODOE"))
+  "Shortcut for (slime-help-apropos <string> nil nil)"
+  (interactive)
+  (slime-help-apropos (read-string "SLIME Apropos: ") nil nil))
+
+(defun slime-help-apropos-package (package &optional internal)
+  "Show apropos listing for symbols in PACKAGE.
+With prefix argument include internal symbols."
+  (interactive (list (let ((pkg (slime-read-package-name "Package: ")))
+                       (if (string= pkg "") (slime-current-package) pkg))
+                     current-prefix-arg))
+  (slime-help-apropos "" (not internal) package))
 
 (defun slime-help-setup-key-bindings ()
   (define-key slime-doc-map "a" 'slime-help-apropos)
