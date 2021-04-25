@@ -76,11 +76,11 @@
   (slime-help--propertize-links
    (slime-help--propertize-bare-links string)))
 
-(defun slime-help--insert-documentation (info)
+(defun slime-help--insert-documentation (info &optional package)
   (if slime-help-parse-docstrings
       (slime-help--format-parsed-docstring
        (cdr (assoc :parsed-documentation info))
-       (cdr (assoc :package info)))
+       (or package (cdr (assoc :package info))))
     (insert (slime-help--propertize-docstring (cdr (assoc :documentation info))))))
 
 ;; copied from helpful.el library
@@ -160,6 +160,12 @@
                                (slime-help-symbol (format "%s::%s" package (second word))))
                      'follow-link t
                      'help-echo "Describe function"))
+     ((and (listp word) (eql (first word) :class))
+      (insert-button (second word)
+		     'action (lambda (btn)
+			       (slime-help-class (format "%s::%s" package (second word))))
+		     'follow-link t
+		     'help-echo "Describe class"))
      ((and (listp word) (eql (first word) :key))
       (insert (propertize (second word) 'face 'slime-help-keyword)))
      ((and (listp word) (eql (first word) :var))
@@ -563,7 +569,7 @@
               (insert (propertize (format "- %s" (cdr (assoc :name slot))) 'face 'bold))
               (newline)
               (when (cdr (assoc :documentation slot))
-                (insert (cdr (assoc :documentation slot)))
+		(slime-help--insert-documentation slot (cdr (assoc :package symbol-info)))
                 (newline))))
           (newline))
 

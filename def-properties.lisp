@@ -277,6 +277,8 @@ the CADR of the list."
   (flet ((load-slot (slot)
            (list (cons :name (string (closer-mop:slot-definition-name slot)))
                  (cons :documentation (swank-mop:slot-definition-documentation slot))
+		 (when (swank-mop:slot-definition-documentation slot)
+		   (cons :parsed-documentation (parse-docstring (swank-mop:slot-definition-documentation slot) nil :package (symbol-package (class-name class)))))
                  ;; The LIST call below is because the accessor lookup is wrapped
                  ;; in a FOR statement in the template.
                  (cons :accessors (let ((accessor-list (accessor-properties class slot)))
@@ -322,7 +324,7 @@ the CADR of the list."
           do (if (stringp word)
                  (push word segment)
                  ;; else, it is an "element"
-                 (destructuring-bind (el-type content) word
+                 (destructuring-bind (el-type content &rest args) word
                    (push (apply #'concatenate 'string (nreverse segment))
                          segments)
                    (setf segment nil)
@@ -391,11 +393,17 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
      (loop for word in words
            collect (cond
                      ((member (string-upcase word) (mapcar 'symbol-name bound-args) :test string-test)
-                      (list :arg word))
+                      (list :arg word (aand (find-symbol (string-upcase word) package)
+					    (aand (find-class it nil)
+						  :class))))
                      ((aand
 		       (find-symbol word package)
 		       (fboundp it))
                       (list :fn word))
+		     ((aand
+		       (find-symbol word package)
+		       (find-class it nil))
+		      (list :class word))
                      ((aand (find-symbol word package)
 			    (boundp it))
                       (list :var word))
