@@ -636,7 +636,8 @@
   (dolist (plist plists)
     (let ((designator (plist-get plist :designator)))
       (cl-assert designator)
-      (slime-insert-propertized `(face slime-apropos-symbol) designator))
+      ;;(slime-insert-propertized `(face slime-apropos-symbol) designator)
+      (insert (propertize designator 'face 'slime-apropos-symbol)))
     (terpri)
     (cl-loop for (prop value) on plist by #'cddr
              unless (eq prop :designator) do
@@ -650,14 +651,14 @@
                         (string value)
                         ((member nil :not-documented) "(not documented)")))
 	       (let ((designator (plist-get plist :designator)))
-		 (add-text-properties
-		  start (point)
-		  (list 'type prop
-			'action (lambda (btn) (slime-help-symbol designator))
-			'weight 'bold
-			'button t
-			'apropos-label namespace
-			'item designator)))
+	       	 (add-text-properties
+	       	  start (point)
+	       	  (list 'type prop
+	       		'action (lambda (btn) (slime-help-symbol designator))
+	       		'weight 'bold
+	       		'button t
+	       		'apropos-label namespace
+	       		'item designator)))
                (terpri)))))
 
 (defun slime-help-show-apropos (plists string package summary)
