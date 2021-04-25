@@ -422,8 +422,9 @@
                        'follow-link t
                        'help-echo "Describe package")
         (newline 2)
-        (slime-help--insert-documentation symbol-info)
-        (newline 2)
+	(when (cdr (assoc :documentation symbol-info))
+	  (slime-help--insert-documentation symbol-info)
+	  (newline 2))
         (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
