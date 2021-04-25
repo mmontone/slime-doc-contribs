@@ -198,10 +198,10 @@
   "Kill all slime-help buffers at once."
   (interactive)
   (mapcar 'kill-buffer
-	  (remove-if-not
-	   (lambda (buffer)
-	     (string-prefix-p "*slime-help" (buffer-name buffer)))
-	   (buffer-list))))
+          (remove-if-not
+           (lambda (buffer)
+             (string-prefix-p "*slime-help" (buffer-name buffer)))
+           (buffer-list))))
 
 (defun slime-help--open-buffer ()
   (let ((buffer (current-buffer)))
@@ -289,21 +289,21 @@
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
       (return-from slime-help-packages))
-    
+
     (let* ((packages-info (slime-eval `(swank-help:read-emacs-packages-info)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
-	(dolist (package-info packages-info)
-	  (let ((package-name (cdr (assoc :name package-info))))
-	    (insert-button package-name
-			 'action (lambda (btn)
-				   (slime-help-package package-name))
-			 'follow-link t
-			 'help-echo "Describe package"))
-	  (newline)
-	  (when (cdr (assoc :documentation package-info))
-	    (insert (cdr (assoc :documentation package-info)))
-	    (newline)))
+        (dolist (package-info packages-info)
+          (let ((package-name (cdr (assoc :name package-info))))
+            (insert-button package-name
+                           'action (lambda (btn)
+                                     (slime-help-package package-name))
+                           'follow-link t
+                           'help-echo "Describe package"))
+          (newline)
+          (when (cdr (assoc :documentation package-info))
+            (insert (cdr (assoc :documentation package-info)))
+            (newline)))
         (slime-help--open-buffer)
         nil))))
 
@@ -325,7 +325,19 @@
   (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :macro))))
     (when (null symbol-info)
       (error "Could not read symbol information: %s" symbol-name))
-    (slime-help--funcallable symbol-name symbol-info :macro)))
+    (slime-help--funcallable symbol-name symbol-info
+                             :macro
+                             'extra-buttons
+			     (lambda ()
+                               (cl-flet ((browse-expanders (btn)
+                                                           (slime-who-macroexpands (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+                                 (insert-button "Expanders"
+                                                'action (function browse-expanders)
+                                                'follow-link t
+                                                'help-echo "Show all known expanders of the macro"))
+			       (insert " ")))))
+
+;; (slime-help-macro "ALEXANDRIA:WITH-GENSYMS")
 
 (defun slime-help-generic-function (symbol-name)
   "Display documentation about Common Lisp generic function bound to SYMBOL-NAME."
@@ -341,7 +353,7 @@
     ;; Look at: (slime-find-definitions "CL:PRINT-OBJECT")
     ))
 
-(defun slime-help--funcallable (symbol-name symbol-info function-type)
+(defun slime-help--funcallable (symbol-name symbol-info function-type &rest args)
   "Display documentation about Common Lisp the funcallable FUNCTION-TYPE to SYMBOL-NAME."
   (let* ((function-type-name (subseq (symbol-name function-type) 1))
          (buffer-name (format "*slime-help: %s %s*" symbol-name function-type-name)))
@@ -365,12 +377,12 @@
         (newline)
         (insert (slime-help--highlight-syntax (cdr (assoc :args symbol-info))))
         (newline 2)
-	
-	(when (cdr (assoc :documentation symbol-info))
-	  (slime-help--insert-documentation symbol-info)
-	  (newline 2))
-	
-	(cl-flet ((goto-source (btn)
+
+        (when (cdr (assoc :documentation symbol-info))
+          (slime-help--insert-documentation symbol-info)
+          (newline 2))
+
+        (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
                          'action (function goto-source)
@@ -378,14 +390,14 @@
                          'help-echo "Go to definition source code"))
         (insert " ")
 
-	(cl-flet ((browse-references (btn)
+        (cl-flet ((browse-references (btn)
                                      (slime-who-calls (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "References"
                          'action (function browse-references)
                          'follow-link t
                          'help-echo "Browse references"))
         (insert " ")
-	
+
         (cl-flet ((disassemble-function (btn)
                                         (slime-disassemble-symbol (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Disassemble"
@@ -393,6 +405,9 @@
                          'follow-link t
                          'help-echo "Disassemble function"))
         (insert " ")
+
+	(when (getf args 'extra-buttons)
+          (funcall (getf args 'extra-buttons)))
 
         (insert (slime-help--button "Lookup in manuals"
                                     'slime-help-lookup-in-manuals-button
@@ -430,9 +445,9 @@
                        'follow-link t
                        'help-echo "Describe package")
         (newline 2)
-	(when (cdr (assoc :documentation symbol-info))
-	  (slime-help--insert-documentation symbol-info)
-	  (newline 2))
+        (when (cdr (assoc :documentation symbol-info))
+          (slime-help--insert-documentation symbol-info)
+          (newline 2))
         (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
@@ -441,7 +456,7 @@
                          'help-echo "Go to definition source code"))
         (insert " ")
 
-	(cl-flet ((browse-references (btn)
+        (cl-flet ((browse-references (btn)
                                      (slime-who-references (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "References"
                          'action (function browse-references)
@@ -449,16 +464,16 @@
                          'help-echo "Browse references"))
         (insert " ")
 
-	(cl-flet ((browse-binders (btn)
-				  (slime-who-binds (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+        (cl-flet ((browse-binders (btn)
+                                  (slime-who-binds (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Binders"
                          'action (function browse-binders)
                          'follow-link t
                          'help-echo "Show all known binders of the global variable"))
         (insert " ")
 
-	(cl-flet ((browse-setters (btn)
-				  (slime-who-sets (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+        (cl-flet ((browse-setters (btn)
+                                  (slime-who-sets (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Setters"
                          'action (function browse-setters)
                          'follow-link t
@@ -499,10 +514,10 @@
                        'follow-link t
                        'help-echo "Describe package")
         (newline 2)
-	
-	(when (cdr (assoc :documentation symbol-info))
-	  (slime-help--insert-documentation symbol-info)
-	  (newline 2))
+
+        (when (cdr (assoc :documentation symbol-info))
+          (slime-help--insert-documentation symbol-info)
+          (newline 2))
 
         ;; buttons
         (cl-flet ((goto-source (btn)
@@ -536,33 +551,33 @@
           (insert " "))
         (newline 2)
 
-	;; TODO: show a collapsable (outline-mode?) section with more information about the class
-	;; like class descendants and list of subclasses
+        ;; TODO: show a collapsable (outline-mode?) section with more information about the class
+        ;; like class descendants and list of subclasses
 
-	(let ((slots (cdr (assoc :slots symbol-info))))
+        (let ((slots (cdr (assoc :slots symbol-info))))
           (insert (slime-help--heading-2 "Slots"))
           (newline 2)
-	  (if (zerop (length slots))
-	      (progn (insert "No slots") (newline))
-	    (dolist (slot slots)
+          (if (zerop (length slots))
+              (progn (insert "No slots") (newline))
+            (dolist (slot slots)
               (insert (propertize (format "- %s" (cdr (assoc :name slot))) 'face 'bold))
               (newline)
               (when (cdr (assoc :documentation slot))
-		(insert (cdr (assoc :documentation slot)))
-		(newline))))
+                (insert (cdr (assoc :documentation slot)))
+                (newline))))
           (newline))
 
-	(let ((methods-start (point))
-	      (methods (cdr (assoc :methods symbol-info))))
+        (let ((methods-start (point))
+              (methods (cdr (assoc :methods symbol-info))))
           (insert (slime-help--heading-2 "Methods"))
-	  (make-text-button methods-start (point)
-		       'action (lambda (btn)
-				 (goto-char methods-start)
-				 (outline-toggle-children))
-		       'follow-link t)
+          (make-text-button methods-start (point)
+                            'action (lambda (btn)
+                                      (goto-char methods-start)
+                                      (outline-toggle-children))
+                            'follow-link t)
           (newline 2)
-	  (if (zerop (length methods))
-	      (insert "No methods")
+          (if (zerop (length methods))
+              (insert "No methods")
             (dolist (symbol-info methods)
               (insert-button (format "%s" (upcase (prin1-to-string (cdr (assoc :name symbol-info)))))
                              'action (lambda (btn)
@@ -571,19 +586,19 @@
                              'help-echo "Describe symbol")
               (newline)
               (if (cdr (assoc :documentation symbol-info))
-		  (insert (slime-help--first-line (cdr (assoc :documentation symbol-info))))
-		(insert "Not documented"))
+                  (insert (slime-help--first-line (cdr (assoc :documentation symbol-info))))
+                (insert "Not documented"))
               (newline)
               (insert (slime-help--horizontal-line))
               (newline))))
-	
-	;; Outlines configuration
-	;;(setq outline-regexp "Methods")
-	;;(outline-minor-mode)
-	;;(outline-hide-body)
-	
+
+        ;; Outlines configuration
+        ;;(setq outline-regexp "Methods")
+        ;;(outline-minor-mode)
+        ;;(outline-hide-body)
+
         (slime-help--open-buffer)
-	
+
         nil))))
 
 ;;(slime-help-class "HUNCHENTOOT:ACCEPTOR")
@@ -710,19 +725,19 @@
                    (start (point)))
                (princ "  ")
                (slime-insert-propertized `(face slime-help-apropos-label) namespace)
-	       (princ ": ")
+               (princ ": ")
                (princ (cl-etypecase value
                         (string value)
                         ((member nil :not-documented) "(not documented)")))
-	       (let ((designator (plist-get plist :designator)))
-	       	 (add-text-properties
-	       	  start (point)
-	       	  (list 'type prop
-	       		'action (lambda (btn) (slime-help-symbol designator))
-	       		'weight 'bold
-	       		'button t
-	       		'apropos-label namespace
-	       		'item designator)))
+               (let ((designator (plist-get plist :designator)))
+                 (add-text-properties
+                  start (point)
+                  (list 'type prop
+                        'action (lambda (btn) (slime-help-symbol designator))
+                        'weight 'bold
+                        'button t
+                        'apropos-label namespace
+                        'item designator)))
                (terpri)))))
 
 (defun slime-help-show-apropos (plists string package summary)
@@ -740,7 +755,7 @@
       (goto-char (point-min)))))
 
 (defun slime-help-apropos (string &optional only-external-p package
-                             case-sensitive-p)
+                                  case-sensitive-p)
   "Show all bound symbols whose names match STRING. With prefix
 arg, you're interactively asked for parameters of the search."
   (interactive
@@ -788,45 +803,45 @@ Returns list of symbols and documentation found."
   ;; The doc used to say that DO-ALL includes key-bindings info in the
   ;; output, but I cannot see that that is true.
   (interactive (list (apropos-read-pattern "documentation")
-		     current-prefix-arg))
+                     current-prefix-arg))
   (error "TODO")
   (apropos-parse-pattern pattern)
   (or do-all (setq do-all apropos-do-all))
   (setq apropos-accumulator () apropos-files-scanned ())
   (let ((standard-input (get-buffer-create " apropos-temp"))
-	(apropos-sort-by-scores apropos-documentation-sort-by-scores)
-	f v sf sv)
+        (apropos-sort-by-scores apropos-documentation-sort-by-scores)
+        f v sf sv)
     (unwind-protect
-	(with-current-buffer standard-input
-	  (apropos-documentation-check-doc-file)
-	  (if do-all
-	      (mapatoms
-	       (lambda (symbol)
-		 (setq f (apropos-safe-documentation symbol)
-		       v (get symbol 'variable-documentation))
-		 (if (integerp v) (setq v nil))
-		 (setq f (apropos-documentation-internal f)
-		       v (apropos-documentation-internal v))
-		 (setq sf (apropos-score-doc f)
-		       sv (apropos-score-doc v))
-		 (if (or f v)
-		     (if (setq apropos-item
-			       (cdr (assq symbol apropos-accumulator)))
-			 (progn
-			   (if f
-			       (progn
-				 (setcar (nthcdr 1 apropos-item) f)
-				 (setcar apropos-item (+ (car apropos-item) sf))))
-			   (if v
-			       (progn
-				 (setcar (nthcdr 2 apropos-item) v)
-				 (setcar apropos-item (+ (car apropos-item) sv)))))
-		       (setq apropos-accumulator
-			     (cons (list symbol
-					 (+ (apropos-score-symbol symbol 2) sf sv)
-					 f v)
-				   apropos-accumulator)))))))
-	  (apropos-print nil "\n----------------\n" nil t))
+        (with-current-buffer standard-input
+          (apropos-documentation-check-doc-file)
+          (if do-all
+              (mapatoms
+               (lambda (symbol)
+                 (setq f (apropos-safe-documentation symbol)
+                       v (get symbol 'variable-documentation))
+                 (if (integerp v) (setq v nil))
+                 (setq f (apropos-documentation-internal f)
+                       v (apropos-documentation-internal v))
+                 (setq sf (apropos-score-doc f)
+                       sv (apropos-score-doc v))
+                 (if (or f v)
+                     (if (setq apropos-item
+                               (cdr (assq symbol apropos-accumulator)))
+                         (progn
+                           (if f
+                               (progn
+                                 (setcar (nthcdr 1 apropos-item) f)
+                                 (setcar apropos-item (+ (car apropos-item) sf))))
+                           (if v
+                               (progn
+                                 (setcar (nthcdr 2 apropos-item) v)
+                                 (setcar apropos-item (+ (car apropos-item) sv)))))
+                       (setq apropos-accumulator
+                             (cons (list symbol
+                                         (+ (apropos-score-symbol symbol 2) sf sv)
+                                         f v)
+                                   apropos-accumulator)))))))
+          (apropos-print nil "\n----------------\n" nil t))
       (kill-buffer standard-input))))
 
 (defun slime-help-setup-key-bindings ()
