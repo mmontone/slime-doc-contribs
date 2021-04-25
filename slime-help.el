@@ -192,11 +192,19 @@
   (interactive)
   (kill-buffer (current-buffer)))
 
+(defun slime-help-kill-all-buffers ()
+  (interactive)
+  (mapcar 'kill-buffer
+	  (remove-if-not
+	   (lambda (buffer)
+	     (string-prefix-p "*slime-help" (buffer-name buffer)))
+	   (buffer-list))))
+
 (defun slime-help--open-buffer ()
   (let ((buffer (current-buffer)))
     (setq buffer-read-only t)
     (local-set-key "q" 'slime-help--kill-current-buffer)
-    (local-set-key "Q" 'slime-help--kill-all-help-buffers)
+    (local-set-key "Q" 'slime-help-kill-all-buffers)
     (buffer-disable-undo)
     (set (make-local-variable 'kill-buffer-query-functions) nil)
     (slime-mode)
