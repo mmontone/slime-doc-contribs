@@ -369,6 +369,10 @@ the CADR of the list."
 ;; (list-lambda-list-args '(foo &optional (bar 22) &key key (key2 33) &rest args &body body))
 ;; (list-lambda-list-args '((stream-name file-name &rest args &key (direction) &allow-other-keys) &body body))
 
+(defmacro aand (arg1 &rest args)
+  `(let ((it ,arg1))
+     (and it ,@args)))
+
 (defun parse-docstring (docstring bound-args &key case-sensitive (package *package*))
   "Parse a docstring.
 BOUND-ARGS: when parsing a function/macro/generic function docstring, BOUND-ARGS contains the names of the arguments. That means the function arguments are detected by the parser.
@@ -388,9 +392,12 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
            collect (cond
                      ((member (string-upcase word) (mapcar 'symbol-name bound-args) :test string-test)
                       (list :arg word))
-                     ((fboundp (intern word package))
+                     ((aand
+		       (find-symbol word package)
+		       (fboundp it))
                       (list :fn word))
-                     ((boundp (intern word package))
+                     ((aand (find-symbol word package)
+			    (boundp it))
                       (list :var word))
                      ((eql (aref word 0) #\:)
                       (list :key word))
