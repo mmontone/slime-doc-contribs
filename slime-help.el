@@ -713,6 +713,63 @@ With prefix argument include internal symbols."
                      current-prefix-arg))
   (slime-help-apropos "" (not internal) package))
 
+(defun slime-help-apropos-documentation (pattern &optional do-all)
+  "Show symbols whose documentation contains matches for PATTERN.
+PATTERN can be a word, a list of words (separated by spaces),
+or a regexp (using some regexp special characters).  If it is a word,
+search for matches for that word as a substring.  If it is a list of words,
+search for matches for any two (or more) of those words.
+
+Note that by default this command only searches in the file specified by
+`internal-doc-file-name'; i.e., the etc/DOC file.  With \\[universal-argument] prefix,
+or if `apropos-do-all' is non-nil, it searches all currently defined
+documentation strings.
+
+Returns list of symbols and documentation found."
+  ;; The doc used to say that DO-ALL includes key-bindings info in the
+  ;; output, but I cannot see that that is true.
+  (interactive (list (apropos-read-pattern "documentation")
+		     current-prefix-arg))
+  (error "TODO")
+  (apropos-parse-pattern pattern)
+  (or do-all (setq do-all apropos-do-all))
+  (setq apropos-accumulator () apropos-files-scanned ())
+  (let ((standard-input (get-buffer-create " apropos-temp"))
+	(apropos-sort-by-scores apropos-documentation-sort-by-scores)
+	f v sf sv)
+    (unwind-protect
+	(with-current-buffer standard-input
+	  (apropos-documentation-check-doc-file)
+	  (if do-all
+	      (mapatoms
+	       (lambda (symbol)
+		 (setq f (apropos-safe-documentation symbol)
+		       v (get symbol 'variable-documentation))
+		 (if (integerp v) (setq v nil))
+		 (setq f (apropos-documentation-internal f)
+		       v (apropos-documentation-internal v))
+		 (setq sf (apropos-score-doc f)
+		       sv (apropos-score-doc v))
+		 (if (or f v)
+		     (if (setq apropos-item
+			       (cdr (assq symbol apropos-accumulator)))
+			 (progn
+			   (if f
+			       (progn
+				 (setcar (nthcdr 1 apropos-item) f)
+				 (setcar apropos-item (+ (car apropos-item) sf))))
+			   (if v
+			       (progn
+				 (setcar (nthcdr 2 apropos-item) v)
+				 (setcar apropos-item (+ (car apropos-item) sv)))))
+		       (setq apropos-accumulator
+			     (cons (list symbol
+					 (+ (apropos-score-symbol symbol 2) sf sv)
+					 f v)
+				   apropos-accumulator)))))))
+	  (apropos-print nil "\n----------------\n" nil t))
+      (kill-buffer standard-input))))
+
 (defun slime-help-setup-key-bindings ()
   (define-key slime-doc-map "a" 'slime-help-apropos)
   (define-key slime-doc-map "z" 'slime-help-apropos-all)
