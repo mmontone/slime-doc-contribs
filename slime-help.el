@@ -350,9 +350,12 @@
         (newline)
         (insert (slime-help--highlight-syntax (cdr (assoc :args symbol-info))))
         (newline 2)
-        (slime-help--insert-documentation symbol-info)
-        (newline 2)
-        (cl-flet ((goto-source (btn)
+	
+	(when (cdr (assoc :documentation symbol-info))
+	  (slime-help--insert-documentation symbol-info)
+	  (newline 2))
+	
+	(cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
                          'action (function goto-source)
