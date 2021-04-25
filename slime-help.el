@@ -31,7 +31,7 @@
   :group 'slime-help-faces)
 
 (defface slime-help-argument
-  '((t :foreground "dark turquoise"))
+  '((t (:inherit font-lock-type-face)))
   "Face for variables in Slime help"
   :group 'slime-help-faces)
 
@@ -41,7 +41,7 @@
   :group 'slime-help-faces)
 
 (defface slime-help-keyword
-  '((t (:inherit font-lock-type-face)))
+  '((t :foreground "violet red"))
   "Face for keywords in Slime help"
   :group 'slime-help-faces)
 
