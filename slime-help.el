@@ -78,7 +78,9 @@
 
 (defun slime-help--insert-documentation (info)
   (if slime-help-parse-docstrings
-      (slime-help--format-parsed-docstring (cdr (assoc :parsed-documentation info)))
+      (slime-help--format-parsed-docstring
+       (cdr (assoc :parsed-documentation info))
+       (cdr (assoc :package info)))
     (insert (slime-help--propertize-docstring (cdr (assoc :documentation info))))))
 
 ;; copied from helpful.el library
@@ -146,7 +148,7 @@
 
 ;; helpful.el stuff ends here
 
-(defun slime-help--format-parsed-docstring (docstring)
+(defun slime-help--format-parsed-docstring (docstring package)
   (dolist (word docstring)
     (cond
      ((stringp word) (insert word))
@@ -155,7 +157,7 @@
      ((and (listp word) (eql (first word) :fn))
       (insert-button (second word)
                      'action (lambda (btn)
-                               (slime-help-symbol (second word)))
+                               (slime-help-symbol (format "%s::%s" package (second word))))
                      'follow-link t
                      'help-echo "Describe function"))
      ((and (listp word) (eql (first word) :key))
