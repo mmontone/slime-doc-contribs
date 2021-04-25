@@ -22,7 +22,8 @@
 		(parse-docstring (aget info :documentation)
 				 (when (member (aget info :type) '(:function :generic-function :macro))
 				   (list-lambda-list-args
-				    (aget info :arglist)))))
+				    (aget info :arglist)))
+				 :package (aget info :package)))
 	  info))
   (push (cons :symbol (cdr (assoc :name info))) info)
   (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))

@@ -436,7 +436,8 @@
                          'follow-link t
                          'help-echo "Go to definition source code"))
         (insert " ")
-        (cl-flet ((browse-references (btn)
+
+	(cl-flet ((browse-references (btn)
                                      (slime-who-references (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "References"
                          'action (function browse-references)
