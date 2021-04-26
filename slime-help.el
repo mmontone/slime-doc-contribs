@@ -183,7 +183,7 @@
 (defun slime-help--format-parsed-docstring (docstring package)
   (dolist (word docstring)
     (cond
-     ((stringp word) (insert word))
+     ((stringp word) (insert (slime-help--propertize-docstring word)))
      ((and (listp word) (eql (first word) :arg))
       (insert (propertize (second word) 'face 'slime-help-argument)))
      ((and (listp word) (eql (first word) :fn))
