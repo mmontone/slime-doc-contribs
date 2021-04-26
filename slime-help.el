@@ -274,7 +274,7 @@
         (insert (format "This is a Common Lisp package with %d external symbols" (length (cdr (assoc :external-symbols package-info)))))
         (newline 2)
         (when (cdr (assoc :documentation package-info))
-          (insert (cdr (assoc :documentation package-info)))
+          (insert (slime-help--propertize-docstring (cdr (assoc :documentation package-info))))
           (newline 2))
 
         (cl-flet ((goto-source (btn)
@@ -720,7 +720,7 @@
 	  (insert (slime-help--error "This system is not loaded.")))
         (newline 2)
         (when (cdr (assoc :documentation system-info))
-          (insert (cdr (assoc :documentation system-info)))
+          (insert (slime-help--propertize-docstring (cdr (assoc :documentation system-info))))
           (newline 2))
 
 	;; buttons
