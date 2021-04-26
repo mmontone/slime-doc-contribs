@@ -396,6 +396,16 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
                       (list :arg word (aand (find-symbol (string-upcase word) package)
 					    (aand (find-class it nil)
 						  :class))))
+		     ((and (position #\: word) ;; could be a qualified symbol
+			   (ignore-errors (read-from-string word)))
+		      (let ((symbol (read-from-string word)))
+			(cond
+			  ((fboundp symbol)
+			   (list :fn word))
+			  ((boundp symbol)
+			   (list :var word))
+			  (t ;; I don't know what this is
+			   word))))		  
                      ((aand
 		       (find-symbol word package)
 		       (fboundp it))

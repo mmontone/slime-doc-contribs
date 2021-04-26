@@ -172,6 +172,14 @@
 
 ;; helpful.el stuff ends here
 
+(defun slime-help--qualify-cl-symbol-name (symbol-name &optional package)
+  "Qualify a Common Lisp SYMBOL-NAME using PACKAGE.  If SYMBOL-NAME is already qualified, nothing is done.  If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
+  (let ((package (or package (slime-current-package))))
+    (if (position ?: symbol-name)
+	;; already qualified
+	symbol-name
+      (format "%s::%s" package symbol-name))))
+
 (defun slime-help--format-parsed-docstring (docstring package)
   (dolist (word docstring)
     (cond
@@ -181,13 +189,13 @@
      ((and (listp word) (eql (first word) :fn))
       (insert-button (second word)
                      'action (lambda (btn)
-                               (slime-help-symbol (format "%s::%s" package (second word))))
+                               (slime-help-symbol (slime-help--qualify-cl-symbol-name (second word) package)))
                      'follow-link t
                      'help-echo "Describe function"))
      ((and (listp word) (eql (first word) :class))
       (insert-button (second word)
 		     'action (lambda (btn)
-			       (slime-help-class (format "%s::%s" package (second word))))
+			       (slime-help-class (slime-help--qualify-cl-symbol-name (second word) package)))
 		     'follow-link t
 		     'help-echo "Describe class"))
      ((and (listp word) (eql (first word) :key))
