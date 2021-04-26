@@ -357,14 +357,29 @@
   (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :generic-function))))
     (when (null symbol-info)
       (error "Could not read symbol informartion: %s" symbol-name))
-    (slime-help--funcallable symbol-name symbol-info :generic-function)
+    (slime-help--funcallable
+     symbol-name symbol-info
+     :generic-function
+     'continuation
+     (lambda ()
+       ;; TODO: display specializing methods
+       ;; Look at: (slime-find-definitions "CL:PRINT-OBJECT")
+       (let ((methods (slime-find-definitions (slime-qualify-cl-symbol-name symbol-name))))
+	 (newline 2)
+	 (insert (slime-help--heading-2 "Methods"))
+	 (newline 2)
+	 (cl-loop for (label location) in methods do
+		  (slime-insert-propertized
+		   (list 'slime-location location
+			 'face 'font-lock-keyword-face)
+		   "  " (slime-one-line-ify label) "\n")))
+       (slime-xref-mode)))))
 
-    ;; TODO: display specializing methods
-    ;; Look at: (slime-find-definitions "CL:PRINT-OBJECT")
-    ))
+;; (slime-help-generic-function "CL:PRINT-OBJECT")
 
+;; TODO: remove the following function. I think it is better to implement individual functions for each type of funcallable (macro, function, generic-functions), as they have significant differences.
 (defun slime-help--funcallable (symbol-name symbol-info function-type &rest args)
-  "Display documentation about Common Lisp the funcallable FUNCTION-TYPE to SYMBOL-NAME."
+  "Display documentation about Common Lisp the funcallable FUNCTION-TYPE to SYMBOL-NAME. SYMBOL-INFO contains the collected SWANK documentation. ARGS contains additional arguments, like 'extra-buttons."
   (let* ((function-type-name (subseq (symbol-name function-type) 1))
          (buffer-name (format "*slime-help: %s %s*" symbol-name function-type-name)))
     (when (get-buffer buffer-name)
@@ -422,6 +437,12 @@
         (insert (slime-help--button "Lookup in manuals"
                                     'slime-help-lookup-in-manuals-button
                                     'symbol (cdr (assoc :symbol symbol-info))))
+
+	;; TODO: add a collapsible extra section with debugging actions, like toggle tracing, toggle profiling, perhaps disassemble too.
+
+	(when (getf args 'continuation)
+	  (funcall (getf args 'continuation)))
+	
         (slime-help--open-buffer)
         nil))))
 
