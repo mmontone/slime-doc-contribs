@@ -60,6 +60,21 @@
   "Slime help face for apropos items"
   :group 'slime-help-faces)
 
+(defface slime-help-info
+  '((t :foreground "green"))
+  "Face for displaying slime-help information"
+  :group 'slime-help-faces)
+
+(defface slime-help-warning
+  '((t :foreground "orange"))
+  "Face for displaying slime-help warnings"
+  :group 'slime-help-faces)
+
+(defface slime-help-error
+  '((t :foreground "red"))
+  "Face for displaying slime-help errors"
+  :group 'slime-help-faces)
+
 (defun slime-help--heading-1 (text)
   (propertize text 'face 'slime-help-heading-1))
 
@@ -71,6 +86,15 @@
 
 (defun slime-help--horizontal-line (&rest width)
   (make-string (or width 80) ?\u2500))
+
+(defun slime-help--info (text)
+  (propertize text 'face 'slime-help-info))
+
+(defun slime-help--warning (text)
+  (propertize text 'face 'slime-help-warning))
+
+(defun slime-help--error (text)
+  (propertize text 'face 'slime-help-error))
 
 (defun slime-help--propertize-docstring (string)
   (slime-help--propertize-links
@@ -682,27 +706,18 @@
         (insert (slime-help--heading-1 (upcase system-name)))
         (newline 2)
         (insert (format "This is a Common Lisp ASDF system with %d dependencies" (length (cdr (assoc :dependencies system-info)))))
+	(newline)
+	(if (cdr (assoc :loaded-p system-info))
+	    (insert (slime-help--info "This system is already loaded."))
+	  (insert (slime-help--error "This system is not loaded.")))
         (newline 2)
         (when (cdr (assoc :documentation system-info))
           (insert (cdr (assoc :documentation system-info)))
           (newline 2))
-        (insert (slime-help--heading-2 "Dependencies"))
-        (newline 2)
-        (if (zerop (length (cdr (assoc :dependencies system-info))))
-            (insert "It has no dependencies")
-          ;; else
-          (dolist (dependency (cdr (assoc :dependencies system-info)))
-            (insert "* ")
-            (insert-button dependency
-                           'action (lambda (btn)
-                                     (slime-help-system dependency))
-                           'follow-link t
-                           'help-echo "Describe system")
-            (newline)))
 
-        (newline 2)
-
-        (cl-flet ((browse-system (btn)
+	;; buttons
+	
+	(cl-flet ((browse-system (btn)
                                  (slime-browse-system system-name)))
           (insert-button "Browse"
                          'action (function browse-system)
@@ -719,7 +734,23 @@
                            'follow-link t
                            'help-echo "Load system")))
 
-        (when (and (cdr (assoc :loaded-p system-info))
+	(newline 2)
+	
+        (insert (slime-help--heading-2 "Dependencies"))
+        (newline 2)
+        (if (zerop (length (cdr (assoc :dependencies system-info))))
+            (insert "It has no dependencies")
+          ;; else
+          (dolist (dependency (cdr (assoc :dependencies system-info)))
+            (insert "* ")
+            (insert-button dependency
+                           'action (lambda (btn)
+                                     (slime-help-system dependency))
+                           'follow-link t
+                           'help-echo "Describe system")
+            (newline)))
+
+	(when (and (cdr (assoc :loaded-p system-info))
                    (cdr (assoc :packages system-info)))
           (newline 2)
           (insert (slime-help--heading-2 "Packages"))
@@ -732,12 +763,7 @@
                            'help-echo "Describe package")
             (insert " ")))
 
-        (setq buffer-read-only t)
-        (local-set-key "q" 'slime-help--kill-current-buffer)
-        (buffer-disable-undo)
-        (set (make-local-variable 'kill-buffer-query-functions) nil)
-        (goto-char 0)
-        (pop-to-buffer buffer)
+        (slime-help--open-buffer)
         nil))))
 
 ;;(slime-help-system "alexandria")
