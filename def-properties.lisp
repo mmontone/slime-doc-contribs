@@ -392,6 +392,8 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
     (concat-rich-text
      (loop for word in words
            collect (cond
+		     ((eql (aref word 0) #\:)
+                      (list :key word))
                      ((member (string-upcase word) (mapcar 'symbol-name bound-args) :test string-test)
                       (list :arg word (aand (find-symbol (string-upcase word) package)
 					    (aand (find-class it nil)
@@ -417,8 +419,6 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
                      ((aand (find-symbol word package)
 			    (boundp it))
                       (list :var word))
-                     ((eql (aref word 0) #\:)
-                      (list :key word))
                      (t word))))))
 
 ;; (parse-docstring "asdf" nil)
