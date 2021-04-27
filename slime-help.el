@@ -35,7 +35,7 @@
 
 (defface slime-help-heading-1
   '((t :weight bold
-       :height 1.5
+       :height 1.4
        ;;:underline t
        ))
   "Slime help face for headings"
@@ -51,7 +51,7 @@
 
 (defface slime-help-heading-3
   '((t :weight bold
-       :height 1.1
+       :height 1.2
        ;;:underline t
        ))
   "Slime help face for headings"
