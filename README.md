@@ -52,6 +52,8 @@ slime-help-packages
    Browse all loaded packages
 ```
 
+Use `q` to kill individual buffers, and `Q` to kill all help buffers at once.
+
 ### SLIME-INFO
 
 #### Commands
@@ -72,3 +74,5 @@ slime-info-system	      M-x ... RET
    Show information about Common Lisp ASDF system named SYSTEM-NAME,
    using an Info buffer.
 ```
+
+Use `q` to kill individual buffers, and `Q` to kill all help buffers at once.
