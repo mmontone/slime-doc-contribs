@@ -1014,13 +1014,13 @@ Returns list of symbols and documentation found."
    ["Browse packages" slime-help-packages
     :help "Browse the list of loaded packages"]
    "---"
-   ["Symbol documentation" slime-help-symbol
+   ["Describe symbol..." slime-help-symbol
     :help "Show documentation of symbol"]
-   ["Function documentation" slime-help-function
+   ["Describe function..." slime-help-function
     :help "Show documentation of function"]
-   ["Package documentation" slime-help-package
+   ["Describe package..." slime-help-package
     :help "Show package documentation"]
-   ["System documentation" slime-help-system
+   ["Describe system..." slime-help-system
     :help "Show ASDF system documentation"]
    "---"
    ["Quit" slime-help-quit
@@ -1035,13 +1035,13 @@ Returns list of symbols and documentation found."
    ["Browse packages" slime-help-packages
     :help "Browse the list of loaded packages"]
    "---"
-   ["Symbol documentation" slime-help-symbol
+   ["Describe symbol..." slime-help-symbol
     :help "Show documentation of symbol"]
-   ["Function documentation" slime-help-function
+   ["Describe function..." slime-help-function
     :help "Show documentation of function"]
-   ["Package documentation" slime-help-package
+   ["Describe package..." slime-help-package
     :help "Show package documentation"]
-   ["System documentation" slime-help-system
+   ["Describe system..." slime-help-system
     :help "Show ASDF system documentation"]
    "---"
    [ "Lookup Documentation..." slime-documentation-lookup t ]
