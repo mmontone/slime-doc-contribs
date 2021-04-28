@@ -549,6 +549,14 @@
         (when (cdr (assoc :documentation symbol-info))
           (slime-help--insert-documentation symbol-info)
           (newline 2))
+	
+	(if (not (cdr (assoc :boundp symbol-info)))
+	    (insert (slime-help--warning "The variable is UNBOUND"))
+	  (progn
+	    (insert (propertize "Value: " 'face 'bold))
+	    (insert (slime-help--info (cdr (assoc :value symbol-info))))))
+	(newline 2)
+	
         (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
