@@ -1006,7 +1006,7 @@ Returns list of symbols and documentation found."
   (define-key slime-doc-map "s" 'slime-help-system))
 
 (defun slime-help--add-menu-to-slime ()
-  (easy-menu-add-item 'menubar-slime nil slime-help-mode-menu))
+  (easy-menu-add-item 'menubar-slime nil 'slime-help-mode-menu))
 
 (define-slime-contrib slime-help
   "Augmented help mode for Common Lisp"
@@ -1017,9 +1017,8 @@ Returns list of symbols and documentation found."
   (:on-load
    ;; setup key bindings
    (slime-help-setup-key-bindings)
-   ;; add slime help menu to slime
-   (add-hook 'slime-mode-hook 'slime-help--add-menu-to-slime)
-   ))
+   ;; add submenu to SLIME menu
+   (slime-help--add-menu-to-slime)))
 
 (defgroup slime-help nil
   "Common Lisp documentation browser"
