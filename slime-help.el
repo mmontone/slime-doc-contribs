@@ -102,6 +102,11 @@
   "Face for displaying slime-help errors"
   :group 'slime-help-faces)
 
+(defface slime-help-button
+  '((t (:box (:line-width 2 :color "dark grey") :background "light grey" :foreground "black")))
+  "Face for slime-help buttons"
+  :group 'slime-help-faces)
+
 (defun slime-help--heading-1 (text)
   (propertize text 'face 'slime-help-heading-1))
 
@@ -154,6 +159,7 @@
 (define-button-type 'slime-help-lookup-in-manuals-button
   'action #'slime-help--lookup-in-manuals
   'follow-link t
+  'face 'slime-help-button
   'help-echo "Lookup in manuals")
 
 (defun slime-help--lookup-in-manuals (btn)
@@ -308,6 +314,7 @@
                                (slime-edit-definition-other-window package-name)))
           (insert-button "Source"
                          'action (function goto-source)
+                         'face 'slime-help-button
                          'follow-link t
                          'help-echo "Go to package source code"))
         (newline 2)
@@ -401,6 +408,7 @@
                                (cl-flet ((browse-expanders (btn)
                                                            (slime-who-macroexpands (prin1-to-string (cdr (assoc :symbol symbol-info))))))
                                  (insert-button "Expanders"
+                                                'face 'slime-help-button
                                                 'action (function browse-expanders)
                                                 'follow-link t
                                                 'help-echo "Show all known expanders of the macro"))
@@ -470,6 +478,7 @@
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
                          'action (function goto-source)
+                         'face 'slime-help-button
                          'follow-link t
                          'help-echo "Go to definition source code"))
         (insert " ")
@@ -478,6 +487,7 @@
                                      (slime-who-calls (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "References"
                          'action (function browse-references)
+                         'face 'slime-help-button
                          'follow-link t
                          'help-echo "Browse references"))
         (insert " ")
@@ -486,6 +496,7 @@
                                         (slime-disassemble-symbol (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Disassemble"
                          'action (function disassemble-function)
+                         'face 'slime-help-button
                          'follow-link t
                          'help-echo "Disassemble function"))
         (insert " ")
@@ -542,6 +553,7 @@
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
                          'action (function goto-source)
+                         'face 'slime-help-button
                          'follow-link t
                          'help-echo "Go to definition source code"))
         (insert " ")
@@ -549,6 +561,7 @@
         (cl-flet ((browse-references (btn)
                                      (slime-who-references (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "References"
+                         'face 'slime-help-button
                          'action (function browse-references)
                          'follow-link t
                          'help-echo "Browse references"))
@@ -557,6 +570,7 @@
         (cl-flet ((browse-binders (btn)
                                   (slime-who-binds (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Binders"
+                         'face 'slime-help-button
                          'action (function browse-binders)
                          'follow-link t
                          'help-echo "Show all known binders of the global variable"))
@@ -565,6 +579,7 @@
         (cl-flet ((browse-setters (btn)
                                   (slime-who-sets (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Setters"
+                         'face 'slime-help-button
                          'action (function browse-setters)
                          'follow-link t
                          'help-echo "Show all known setters of the global variable"))
@@ -613,6 +628,7 @@
         (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
+                         'face 'slime-help-button
                          'action (function goto-source)
                          'follow-link t
                          'help-echo "Go to definition source code"))
@@ -620,6 +636,7 @@
         (cl-flet ((browse-references (btn)
                                      (slime-who-references (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "References"
+                         'face 'slime-help-button
                          'action (function browse-references)
                          'follow-link t
                          'help-echo "Browse references"))
