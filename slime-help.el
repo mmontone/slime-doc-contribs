@@ -997,6 +997,31 @@ Returns list of symbols and documentation found."
    ["Quit" slime-help-quit
     :help "Quit SLIME help"]))
 
+(easy-menu-define
+ slime-help-submenu nil
+ "Menu for SLIME-Help"
+ '("Documentation"
+   ["Browse packages" slime-help-packages
+    :help "Browse the list of loaded packages"]
+   "---"
+   ["Symbol documentation" slime-help-symbol
+    :help "Show documentation of symbol"]
+   ["Function documentation" slime-help-function
+    :help "Show documentation of function"]
+   ["Package documentation" slime-help-package
+    :help "Show package documentation"]
+   ["System documentation" slime-help-system
+    :help "Show ASDF system documentation"]
+   "---"
+   [ "Lookup Documentation..." slime-documentation-lookup t ]
+   [ "Apropos..."              slime-help-apropos t]
+   [ "Apropos all..."          slime-help-apropos-all t]
+   [ "Apropos Package..."      slime-help-apropos-package t]
+   [ "Hyperspec..."            slime-hyperspec-lookup t ]
+   "---"
+   ["Quit" slime-help-quit
+    :help "Quit SLIME help"]))
+
 (defun slime-help-setup-key-bindings ()
   (define-key slime-doc-map "a" 'slime-help-apropos)
   (define-key slime-doc-map "z" 'slime-help-apropos-all)
@@ -1008,6 +1033,9 @@ Returns list of symbols and documentation found."
 (defun slime-help--add-menu-to-slime ()
   (easy-menu-add-item 'menubar-slime nil 'slime-help-mode-menu))
 
+(defun slime-help--replace-slime-documentation-menu ()
+  (easy-menu-add-item 'menubar-slime nil 'slime-help-submenu))
+
 (define-slime-contrib slime-help
   "Augmented help mode for Common Lisp"
   (:authors "Mariano Montone")
@@ -1018,7 +1046,8 @@ Returns list of symbols and documentation found."
    ;; setup key bindings
    (slime-help-setup-key-bindings)
    ;; add submenu to SLIME menu
-   (slime-help--add-menu-to-slime)))
+   ;;(slime-help--add-menu-to-slime)
+   (slime-help--replace-slime-documentation-menu)))
 
 (defgroup slime-help nil
   "Common Lisp documentation browser"
