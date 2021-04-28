@@ -269,7 +269,7 @@
   (interactive)
   (kill-buffer (current-buffer)))
 
-(defun slime-help-kill-all-buffers ()
+(defun slime-help-quit ()
   "Kill all slime-help buffers at once."
   (interactive)
   (mapcar 'kill-buffer
@@ -282,10 +282,10 @@
   (let ((buffer (current-buffer)))
     (setq buffer-read-only t)
     (local-set-key "q" 'slime-help--kill-current-buffer)
-    (local-set-key "Q" 'slime-help-kill-all-buffers)
     (buffer-disable-undo)
     (set (make-local-variable 'kill-buffer-query-functions) nil)
     (slime-mode)
+    (slime-help-mode)
     (goto-char 0)
     (pop-to-buffer buffer)))
 
@@ -961,6 +961,42 @@ Returns list of symbols and documentation found."
           (apropos-print nil "\n----------------\n" nil t))
       (kill-buffer standard-input))))
 
+(defun slime-help ()
+  (interactive)
+  (slime-help-packages))
+
+(defvar slime-help-mode-map
+  (let ((map (make-keymap)))
+    (define-key map "q" 'slime-help--kill-current-buffer)
+    (define-key map "Q" 'slime-help-quit)
+    map))
+
+(define-minor-mode slime-help-mode
+  "Quicklisp systems minor mode."
+  :init-value nil
+  :lighter " SLIME-Help"
+  :keymap slime-help-mode-map
+  :group 'slime-help)
+
+(easy-menu-define
+ slime-help-mode-menu slime-help-mode-map
+ "Menu for SLIME-Help"
+ '("SLIME Help"
+   ["Browse packages" slime-help-packages
+    :help "Browse the list of loaded packages"]
+   "---"
+   ["Symbol documentation" slime-help-symbol
+    :help "Show documentation of symbol"]
+   ["Function documentation" slime-help-function
+    :help "Show documentation of function"]
+   ["Package documentation" slime-help-package
+    :help "Show package documentation"]
+   ["System documentation" slime-help-system
+    :help "Show ASDF system documentation"]
+   "---"
+   ["Quit" slime-help-quit
+    :help "Quit SLIME help"]))
+
 (defun slime-help-setup-key-bindings ()
   (define-key slime-doc-map "a" 'slime-help-apropos)
   (define-key slime-doc-map "z" 'slime-help-apropos-all)
@@ -969,15 +1005,21 @@ Returns list of symbols and documentation found."
   (define-key slime-doc-map "p" 'slime-help-package)
   (define-key slime-doc-map "s" 'slime-help-system))
 
+(defun slime-help--add-menu-to-slime ()
+  (easy-menu-add-item 'menubar-slime nil slime-help-mode-menu))
+
 (define-slime-contrib slime-help
-  "Augmented help"
+  "Augmented help mode for Common Lisp"
   (:authors "Mariano Montone")
   (:license "GPL")
   (:slime-dependencies slime-asdf)
   (:swank-dependencies swank-help)
   (:on-load
    ;; setup key bindings
-   (slime-help-setup-key-bindings)))
+   (slime-help-setup-key-bindings)
+   ;; add slime help menu to slime
+   (add-hook 'slime-mode-hook 'slime-help--add-menu-to-slime)
+   ))
 
 (defgroup slime-help nil
   "Common Lisp documentation browser"
