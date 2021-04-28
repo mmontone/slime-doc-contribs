@@ -383,6 +383,33 @@
         (slime-help--open-buffer)
         nil))))
 
+(defun* slime-help-systems ()
+  "Display information about registered ASDF systems."
+  
+  (interactive)
+
+  (let ((buffer-name "*slime-help: registered ASDF systems*"))
+    (when (get-buffer buffer-name)
+      (pop-to-buffer buffer-name)
+      (return-from slime-help-systems))
+
+    (let* ((systems-info (slime-eval `(swank-help:read-emacs-systems-info)))
+           (buffer (get-buffer-create buffer-name)))
+      (with-current-buffer buffer
+        (dolist (system-info systems-info)
+          (lexical-let ((system-name (cdr (assoc :name system-info))))
+            (insert-button system-name
+                           'action (lambda (btn)
+                                     (slime-help-system system-name))
+                           'follow-link t
+                           'help-echo "Describe system"))
+          (newline)
+          (when (cdr (assoc :documentation system-info))
+            (insert (cdr (assoc :documentation system-info)))
+            (newline)))
+        (slime-help--open-buffer)
+        nil))))
+
 (defun slime-help-function (symbol-name)
   "Display documentation about Common Lisp function bound to SYMBOL-NAME."
   (interactive (list (slime-read-symbol-name "Describe function: ")))
@@ -963,7 +990,7 @@ Returns list of symbols and documentation found."
 
 (defun slime-help ()
   (interactive)
-  (slime-help-packages))
+  (slime-help-systems))
 
 (defvar slime-help-mode-map
   (let ((map (make-keymap)))
@@ -982,6 +1009,8 @@ Returns list of symbols and documentation found."
  slime-help-mode-menu slime-help-mode-map
  "Menu for SLIME-Help"
  '("SLIME Help"
+   ["Browse systems" slime-help-systems
+    :help "Browse registered ASDF systems"]
    ["Browse packages" slime-help-packages
     :help "Browse the list of loaded packages"]
    "---"
@@ -1001,6 +1030,8 @@ Returns list of symbols and documentation found."
  slime-help-submenu nil
  "Menu for SLIME-Help"
  '("Documentation"
+   ["Browse systems" slime-help-systems
+    :help "Browse registered ASDF systems"]
    ["Browse packages" slime-help-packages
     :help "Browse the list of loaded packages"]
    "---"
