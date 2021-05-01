@@ -983,6 +983,13 @@ search for matches for any two (or more) of those words."
     ["Describe system..." slime-help-system
      :help "Show ASDF system documentation"]
     "---"
+    [ "Lookup Documentation..." slime-documentation-lookup t ]
+    [ "Apropos..."              slime-help-apropos t]
+    [ "Apropos all..."          slime-help-apropos-all t]
+    [ "Apropos Package..."      slime-help-apropos-package t]
+    [ "Apropos documentation..." slime-help-apropos-documentation
+      :help "Search in docstrings"]
+    "---"
     ["Quit" slime-help-quit
      :help "Quit SLIME help"]))
 
@@ -1008,6 +1015,8 @@ search for matches for any two (or more) of those words."
     [ "Apropos..."              slime-help-apropos t]
     [ "Apropos all..."          slime-help-apropos-all t]
     [ "Apropos Package..."      slime-help-apropos-package t]
+    [ "Apropos documentation..." slime-help-apropos-documentation
+      :help "Search in docstrings"]
     [ "Hyperspec..."            slime-hyperspec-lookup t ]
     "---"
     ["Quit" slime-help-quit
