@@ -18,12 +18,16 @@
   (when (aget info :package)
     (setf (cdr (assoc :package info))
 	  (package-name (aget info :package))))
+  (when (aget info :arglist)
+    ;; arglist is conflictive for slime protocol. do not use.
+    (setf (cdr (assoc :arglist info)) nil))
   (when (aget info :documentation)
     (push (cons :parsed-documentation
 		(parse-docstring (aget info :documentation)
 				 (when (member (aget info :type) '(:function :generic-function :macro))
 				   (list-lambda-list-args
-				    (aget info :arglist)))
+				    (read-from-string (aget info :args))
+				    ))
 				 :package (aget info :package)))
 	  info))
   (push (cons :symbol (cdr (assoc :name info))) info)

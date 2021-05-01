@@ -156,7 +156,7 @@ not available is DATA."
                       #+nil(format nil "~{~a~^ ~}"
                                    (mapcar #'format-argument-to-string (swank-backend:arglist symbol))
                                    )
-                      (princ-to-string (swank-backend:arglist symbol))))
+                      (prin1-to-string (swank-backend:arglist symbol))))
         (cons :arglist (swank::arglist symbol))
         (cons :package (symbol-package symbol))
         (cons :type (cond ((macro-function symbol) :macro)
@@ -172,7 +172,7 @@ not available is DATA."
                       #+nil(format nil "~{~a~^ ~}"
                                    (mapcar #'format-argument-to-string (swank-backend:arglist symbol))
                                    )
-                      (princ-to-string (swank-backend:arglist symbol))))
+                      (prin1-to-string (swank-backend:arglist symbol))))
         (cons :arglist (swank::arglist symbol))
         (cons :package (symbol-package symbol))
         (cons :type :generic-function)
