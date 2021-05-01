@@ -456,8 +456,6 @@
      :generic-function
      'continuation
      (lambda ()
-       ;; TODO: display specializing methods
-       ;; Look at: (slime-find-definitions "CL:PRINT-OBJECT")
        (let ((methods (slime-find-definitions (slime-qualify-cl-symbol-name symbol-name))))
          (newline 2)
          (insert (slime-help--heading-2 "Methods"))
