@@ -74,4 +74,46 @@
 	    (read-emacs-system-info system t))
 	  (asdf:registered-systems)))
 
+(swank::defslimefun apropos-documentation-for-emacs
+    (pattern &optional external-only case-sensitive package)
+  "Make an apropos search in docstrings for Emacs.
+The result is a list of property lists."
+  (let ((package (if package
+                     (or (swank::parse-package package)
+                         (error "No such package: ~S" package)))))
+    ;; The MAPCAN will filter all uninteresting symbols, i.e. those
+    ;; who cannot be meaningfully described.
+    (mapcan (swank::listify #'swank::briefly-describe-symbol-for-emacs)
+            (sort (remove-duplicates
+                   (apropos-symbols-documentation pattern external-only case-sensitive package))
+                  #'swank::present-symbol-before-p))))
+
+(defun some-documentation (symbol)
+  (some (lambda (type)
+	  (documentation symbol type))
+	'(function variable type structure set t)))
+
+(defun apropos-symbols-documentation (pattern external-only case-sensitive package)
+  (let ((packages (or package (remove (find-package :keyword)
+                                      (list-all-packages))))
+        (matcher (make-apropos-documentation-matcher pattern case-sensitive))
+        (result))
+    (with-package-iterator (next packages :external :internal)
+      (loop (multiple-value-bind (morep symbol) (next)
+              (cond ((not morep) (return))
+                    ((and (if external-only (swank::symbol-external-p symbol) t)
+			  (some-documentation symbol)
+                          (funcall matcher (some-documentation symbol)))
+                     (push symbol result))))))
+    result))
+
+(defun make-apropos-documentation-matcher (pattern case-sensitive)
+  (let ((chr= (if case-sensitive #'char= #'char-equal)))
+    (lambda (docstring)
+      (every (lambda (word)
+	       (search word docstring :test chr=))
+	     (if (stringp pattern)
+		 (list pattern)
+		 pattern)))))
+
 (provide :swank-help)

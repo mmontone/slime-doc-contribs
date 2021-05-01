@@ -385,7 +385,7 @@
 
 (defun* slime-help-systems ()
   "Display information about registered ASDF systems."
-  
+
   (interactive)
 
   (let ((buffer-name "*slime-help: registered ASDF systems*"))
@@ -576,14 +576,14 @@
         (when (cdr (assoc :documentation symbol-info))
           (slime-help--insert-documentation symbol-info)
           (newline 2))
-	
-	(if (not (cdr (assoc :boundp symbol-info)))
-	    (insert (slime-help--warning "The variable is UNBOUND"))
-	  (progn
-	    (insert (propertize "Value: " 'face 'bold))
-	    (insert (slime-help--info (cdr (assoc :value symbol-info))))))
-	(newline 2)
-	
+
+        (if (not (cdr (assoc :boundp symbol-info)))
+            (insert (slime-help--warning "The variable is UNBOUND"))
+          (progn
+            (insert (propertize "Value: " 'face 'bold))
+            (insert (slime-help--info (cdr (assoc :value symbol-info))))))
+        (newline 2)
+
         (cl-flet ((goto-source (btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
@@ -931,62 +931,22 @@ With prefix argument include internal symbols."
                      current-prefix-arg))
   (slime-help-apropos "" (not internal) package))
 
-(defun slime-help-apropos-documentation (pattern &optional do-all)
+(defun slime-help-apropos-documentation (pattern &optional package)
   "Show symbols whose documentation contains matches for PATTERN.
 PATTERN can be a word, a list of words (separated by spaces),
 or a regexp (using some regexp special characters).  If it is a word,
 search for matches for that word as a substring.  If it is a list of words,
-search for matches for any two (or more) of those words.
-
-Note that by default this command only searches in the file specified by
-`internal-doc-file-name'; i.e., the etc/DOC file.  With \\[universal-argument] prefix,
-or if `apropos-do-all' is non-nil, it searches all currently defined
-documentation strings.
-
-Returns list of symbols and documentation found."
-  ;; The doc used to say that DO-ALL includes key-bindings info in the
-  ;; output, but I cannot see that that is true.
-  (interactive (list (apropos-read-pattern "documentation")
-                     current-prefix-arg))
-  (error "TODO")
-  (apropos-parse-pattern pattern)
-  (or do-all (setq do-all apropos-do-all))
-  (setq apropos-accumulator () apropos-files-scanned ())
-  (let ((standard-input (get-buffer-create " apropos-temp"))
-        (apropos-sort-by-scores apropos-documentation-sort-by-scores)
-        f v sf sv)
-    (unwind-protect
-        (with-current-buffer standard-input
-          (apropos-documentation-check-doc-file)
-          (if do-all
-              (mapatoms
-               (lambda (symbol)
-                 (setq f (apropos-safe-documentation symbol)
-                       v (get symbol 'variable-documentation))
-                 (if (integerp v) (setq v nil))
-                 (setq f (apropos-documentation-internal f)
-                       v (apropos-documentation-internal v))
-                 (setq sf (apropos-score-doc f)
-                       sv (apropos-score-doc v))
-                 (if (or f v)
-                     (if (setq apropos-item
-                               (cdr (assq symbol apropos-accumulator)))
-                         (progn
-                           (if f
-                               (progn
-                                 (setcar (nthcdr 1 apropos-item) f)
-                                 (setcar apropos-item (+ (car apropos-item) sf))))
-                           (if v
-                               (progn
-                                 (setcar (nthcdr 2 apropos-item) v)
-                                 (setcar apropos-item (+ (car apropos-item) sv)))))
-                       (setq apropos-accumulator
-                             (cons (list symbol
-                                         (+ (apropos-score-symbol symbol 2) sf sv)
-                                         f v)
-                                   apropos-accumulator)))))))
-          (apropos-print nil "\n----------------\n" nil t))
-      (kill-buffer standard-input))))
+search for matches for any two (or more) of those words."
+  (interactive (list (apropos-read-pattern "documentation")))
+  
+  (let ((buffer-package (or package (slime-current-package))))
+    (slime-eval-async
+        `(swank-help:apropos-documentation-for-emacs
+	  ',pattern t
+	  nil nil)
+      (slime-rcurry #'slime-help-show-apropos (first pattern) buffer-package
+                    (slime-apropos-summary pattern nil
+                                           nil t)))))
 
 (defun slime-help ()
   (interactive)
@@ -1006,52 +966,52 @@ Returns list of symbols and documentation found."
   :group 'slime-help)
 
 (easy-menu-define
- slime-help-mode-menu slime-help-mode-map
- "Menu for SLIME-Help"
- '("SLIME Help"
-   ["Browse systems" slime-help-systems
-    :help "Browse registered ASDF systems"]
-   ["Browse packages" slime-help-packages
-    :help "Browse the list of loaded packages"]
-   "---"
-   ["Describe symbol..." slime-help-symbol
-    :help "Show documentation of symbol"]
-   ["Describe function..." slime-help-function
-    :help "Show documentation of function"]
-   ["Describe package..." slime-help-package
-    :help "Show package documentation"]
-   ["Describe system..." slime-help-system
-    :help "Show ASDF system documentation"]
-   "---"
-   ["Quit" slime-help-quit
-    :help "Quit SLIME help"]))
+  slime-help-mode-menu slime-help-mode-map
+  "Menu for SLIME-Help"
+  '("SLIME Help"
+    ["Browse systems" slime-help-systems
+     :help "Browse registered ASDF systems"]
+    ["Browse packages" slime-help-packages
+     :help "Browse the list of loaded packages"]
+    "---"
+    ["Describe symbol..." slime-help-symbol
+     :help "Show documentation of symbol"]
+    ["Describe function..." slime-help-function
+     :help "Show documentation of function"]
+    ["Describe package..." slime-help-package
+     :help "Show package documentation"]
+    ["Describe system..." slime-help-system
+     :help "Show ASDF system documentation"]
+    "---"
+    ["Quit" slime-help-quit
+     :help "Quit SLIME help"]))
 
 (easy-menu-define
- slime-help-submenu nil
- "Menu for SLIME-Help"
- '("Documentation"
-   ["Browse systems" slime-help-systems
-    :help "Browse registered ASDF systems"]
-   ["Browse packages" slime-help-packages
-    :help "Browse the list of loaded packages"]
-   "---"
-   ["Describe symbol..." slime-help-symbol
-    :help "Show documentation of symbol"]
-   ["Describe function..." slime-help-function
-    :help "Show documentation of function"]
-   ["Describe package..." slime-help-package
-    :help "Show package documentation"]
-   ["Describe system..." slime-help-system
-    :help "Show ASDF system documentation"]
-   "---"
-   [ "Lookup Documentation..." slime-documentation-lookup t ]
-   [ "Apropos..."              slime-help-apropos t]
-   [ "Apropos all..."          slime-help-apropos-all t]
-   [ "Apropos Package..."      slime-help-apropos-package t]
-   [ "Hyperspec..."            slime-hyperspec-lookup t ]
-   "---"
-   ["Quit" slime-help-quit
-    :help "Quit SLIME help"]))
+  slime-help-submenu nil
+  "Menu for SLIME-Help"
+  '("Documentation"
+    ["Browse systems" slime-help-systems
+     :help "Browse registered ASDF systems"]
+    ["Browse packages" slime-help-packages
+     :help "Browse the list of loaded packages"]
+    "---"
+    ["Describe symbol..." slime-help-symbol
+     :help "Show documentation of symbol"]
+    ["Describe function..." slime-help-function
+     :help "Show documentation of function"]
+    ["Describe package..." slime-help-package
+     :help "Show package documentation"]
+    ["Describe system..." slime-help-system
+     :help "Show ASDF system documentation"]
+    "---"
+    [ "Lookup Documentation..." slime-documentation-lookup t ]
+    [ "Apropos..."              slime-help-apropos t]
+    [ "Apropos all..."          slime-help-apropos-all t]
+    [ "Apropos Package..."      slime-help-apropos-package t]
+    [ "Hyperspec..."            slime-hyperspec-lookup t ]
+    "---"
+    ["Quit" slime-help-quit
+     :help "Quit SLIME help"]))
 
 (defun slime-help-setup-key-bindings ()
   (define-key slime-doc-map "a" 'slime-help-apropos)
