@@ -161,7 +161,8 @@ not available is DATA."
         (cons :package (symbol-package symbol))
         (cons :type (cond ((macro-function symbol) :macro)
                           ((typep (symbol-function symbol) 'generic-function) :generic-function)
-                          (t :function)))))
+                          (t :function)))
+	(cons :source (swank/backend:find-source-location (symbol-function symbol)))))
 
 (defun generic-function-properties (symbol &optional shallow)
   (assert (typep (symbol-function symbol) 'generic-function))
@@ -186,7 +187,10 @@ not available is DATA."
         (cons :value (when (boundp symbol) (prin1-to-string (symbol-value symbol))))
         (cons :constant-p (constantp symbol))
         (cons :package (symbol-package symbol))
-        (cons :type :variable)))
+        (cons :type :variable)
+	;;TODO:
+	;;(cons :source (swank/backend:find-source-location (symbol-function symbol)))
+	))
 
 (defun find-superclasses (class)
   (labels ((f (classes found)
