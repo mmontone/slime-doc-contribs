@@ -693,8 +693,9 @@
 
         ;; TODO: show a collapsable (outline-mode?) section with more information about the class
         ;; like class descendants and list of subclasses
-
-        (let ((slots (cdr (assoc :slots symbol-info))))
+	
+	;; TODO: show more information about slots
+	(let ((slots (cdr (assoc :slots symbol-info))))
           (insert (slime-help--heading-2 "Slots"))
           (newline 2)
           (if (zerop (length slots))
