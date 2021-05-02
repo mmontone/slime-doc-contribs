@@ -449,6 +449,8 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
    (cadr
     (or (find :file (cdr location)
               :key 'car)
+	(find :buffer (cdr location)
+              :key 'car)
         (find :buffer-and-file (cdr location)
               :key 'car)
         ))))
