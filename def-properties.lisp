@@ -21,6 +21,7 @@
   (:use :cl)
   (:export
    :symbol-properties
+   :variable-properties
    :function-properties
    :macro-properties
    :class-properties
