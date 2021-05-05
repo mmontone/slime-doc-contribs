@@ -434,7 +434,9 @@ is replaced with replacement."
 	      (format stream "@code{~a}" (second word))
 	      )
              ((and (listp word) (eql (car word) :var))
-	      ;; We would like to do this, but we have to make sure the referenced thing exists
+	      ;; We would like to do create references, but we have to make sure the referenced thing exists.
+	      ;; makeinfo command can be called with --no-validate option for this.
+	      ;; in Emacs, customize makeinfo-options variable (add --no-validate option)
               ;;(format stream "@ref{~a}" (second word))
 	      (format stream "@var{~a}" (second word))
 	      )
