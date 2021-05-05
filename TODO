@@ -1,2 +1,4 @@
 * Parse and consider `symbol' syntax in docstrings. See: https://www.emacswiki.org/emacs/DocString.
 * Consider using Shinmera's "definitions" library instead of "def-properties".
+* Improve description buffers for CLOS classes. Show more information about slots to begin with.
+* Consider showing type information, like the normal Common Lisp describe function does.
