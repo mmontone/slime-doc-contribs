@@ -32,6 +32,7 @@
 (require 'button)
 (require 'lisp-mode)
 (require 'slime)
+(require 'subr-x)
 
 (defface slime-help-heading-1
   '((t :weight bold
