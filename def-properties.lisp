@@ -153,6 +153,7 @@ not available is DATA."
   (list (cons :name symbol)
         (cons :documentation (documentation symbol 'function))
         (cons :args (let ((*print-case* :downcase)
+			  (*print-pretty* nil)
                           (*package* (symbol-package symbol)))
                       #+nil(format nil "~{~a~^ ~}"
                                    (mapcar #'format-argument-to-string (swank-backend:arglist symbol))
@@ -170,6 +171,7 @@ not available is DATA."
   (list (cons :name symbol)
         (cons :documentation (documentation symbol 'function))
         (cons :args (let ((*print-case* :downcase)
+			  (*print-pretty* nil)
                           (*package* (symbol-package symbol)))
                       #+nil(format nil "~{~a~^ ~}"
                                    (mapcar #'format-argument-to-string (swank-backend:arglist symbol))
@@ -395,10 +397,15 @@ the CADR of the list."
   `(let ((it ,arg1))
      (and it ,@args)))
 
-(defun parse-docstring (docstring bound-args &key case-sensitive (package *package*))
+;; TODO: consider elisp style docstring parsing.
+;; See: https://www.gnu.org/software/emacs/manual/html_node/elisp/Documentation-Tips.html
+;; For example, option to only parse quoted words as function/variable references, like `my-function`. Also, consider using `(type)symbol` syntax to disambiguate, like `(function)my-function`.
+(defun parse-docstring (docstring bound-args &key case-sensitive ignore (package *package*))
   "Parse a docstring.
 BOUND-ARGS: when parsing a function/macro/generic function docstring, BOUND-ARGS contains the names of the arguments. That means the function arguments are detected by the parser.
 CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when in uppercase.
+IGNORE: an optional predicate. When ignore is given and invoking it returns T, the current word is not parsed as special symbol.
+PACKAGE: the package to use to read the docstring symbols.
 "
   (let ((words (split-string-with-delimiter
                 docstring
@@ -412,6 +419,10 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
     (concat-rich-text
      (loop for word in words
            collect (cond
+		     ((and ignore
+			   (funcall ignore word))
+		      ;; don't parse as special
+		      word)
 		     ((eql (aref word 0) #\:)
                       (list :key word))
                      ((member (string-upcase word) (mapcar 'symbol-name bound-args) :test string-test)
@@ -423,22 +434,22 @@ CASE-SENSITIVE: when case-sensitive is T, bound arguments are only parsed when i
 		      (let ((symbol (read-from-string word)))
 			(cond
 			  ((fboundp symbol)
-			   (list :fn word))
+			   (list :fn word symbol))
 			  ((boundp symbol)
-			   (list :var word))
+			   (list :var word symbol))
 			  (t ;; I don't know what this is
 			   word))))		  
                      ((aand
 		       (find-symbol word package)
 		       (fboundp it))
-                      (list :fn word))
+                      (list :fn word (find-symbol word package)))
 		     ((aand
 		       (find-symbol word package)
 		       (find-class it nil))
-		      (list :class word))
+		      (list :class word (find-symbol word package)))
                      ((aand (find-symbol word package)
 			    (boundp it))
-                      (list :var word))
+                      (list :var word (find-symbol word package)))
                      (t word))))))
 
 ;; (parse-docstring "asdf" nil)
