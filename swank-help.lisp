@@ -28,7 +28,7 @@
 				   (list-lambda-list-args
 				    (read-from-string (aget info :args))
 				    ))
-				 :package (aget info :package)))
+				 :package (find-package (aget info :package))))
 	  info))
   (push (cons :symbol (cdr (assoc :name info))) info)
   (setf (cdr (assoc :name info)) (symbol-name (cdr (assoc :name info))))

@@ -350,7 +350,7 @@ the CADR of the list."
                    (push (apply #'concatenate 'string (nreverse segment))
                          segments)
                    (setf segment nil)
-                   (push (list el-type (concat-rich-text content))
+                   (push (list* el-type (concat-rich-text content) args)
                          segments)))
           finally (when segment
                     (push (apply #'concatenate 'string (nreverse segment))
@@ -431,7 +431,7 @@ PACKAGE: the package to use to read the docstring symbols.
 						  :class))))
 		     ((and (position #\: word) ;; could be a qualified symbol
 			   (ignore-errors (read-from-string word)))
-		      (let ((symbol (read-from-string word)))
+		      (let ((symbol (let ((*package* package)) (read-from-string word))))
 			(cond
 			  ((fboundp symbol)
 			   (list :fn word symbol))
