@@ -533,6 +533,18 @@
         (insert (slime-help--button "Lookup in manuals"
                                     'slime-help-lookup-in-manuals-button
                                     'symbol (cdr (assoc :symbol symbol-info))))
+        (insert " ")
+
+        (when (cl-member (cdr (assoc :package symbol-info))
+                         '("COMMON-LISP" "CL") :test 'equalp)
+          (cl-flet ((lookup-in-hyperspec (btn)
+                                         (slime-hyperspec-lookup
+                                          (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+            (insert-button "Lookup in Hyperspec"
+                           'face 'slime-help-button
+                           'action (function lookup-in-hyperspec)
+                           'follow-link t
+                           'help-echo "Lookup variable in Hyperspec")))
 
         ;; TODO: add a collapsible extra section with debugging actions, like toggle tracing, toggle profiling, perhaps disassemble too.
 
@@ -542,6 +554,7 @@
         (slime-help--open-buffer)
         nil))))
 
+;;(slime-help-function "CL:REMOVE")
 ;;(slime-help-function "ALEXANDRIA:FLATTEN")
 ;;(slime-help-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
 ;;(slime-help-macro "ALEXANDRIA:WITH-GENSYMS")
@@ -622,6 +635,20 @@
         (insert (slime-help--button "Lookup in manuals"
                                     'slime-help-lookup-in-manuals-button
                                     'symbol (cdr (assoc :symbol symbol-info))))
+
+        (insert " ")
+
+        (when (cl-member (cdr (assoc :package symbol-info))
+                         '("COMMON-LISP" "CL") :test 'equalp)
+          (cl-flet ((lookup-in-hyperspec (btn)
+                                         (slime-hyperspec-lookup
+                                          (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+            (insert-button "Lookup in Hyperspec"
+                           'face 'slime-help-button
+                           'action (function lookup-in-hyperspec)
+                           'follow-link t
+                           'help-echo "Lookup variable in Hyperspec")))
+
         (slime-help--open-buffer)
         nil))))
 
@@ -694,9 +721,9 @@
 
         ;; TODO: show a collapsable (outline-mode?) section with more information about the class
         ;; like class descendants and list of subclasses
-	
-	;; TODO: show more information about slots
-	(let ((slots (cdr (assoc :slots symbol-info))))
+
+        ;; TODO: show more information about slots
+        (let ((slots (cdr (assoc :slots symbol-info))))
           (insert (slime-help--heading-2 "Slots"))
           (newline 2)
           (if (zerop (length slots))
@@ -938,12 +965,12 @@ or a regexp (using some regexp special characters).  If it is a word,
 search for matches for that word as a substring.  If it is a list of words,
 search for matches for any two (or more) of those words."
   (interactive (list (apropos-read-pattern "documentation")))
-  
+
   (let ((buffer-package (or package (slime-current-package))))
     (slime-eval-async
         `(swank-help:apropos-documentation-for-emacs
-	  ',pattern t
-	  nil nil)
+          ',pattern t
+          nil nil)
       (slime-rcurry #'slime-help-show-apropos (first pattern) buffer-package
                     (slime-apropos-summary pattern nil
                                            nil t)))))
