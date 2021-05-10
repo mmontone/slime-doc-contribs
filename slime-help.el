@@ -706,6 +706,19 @@
         (insert (slime-help--button "Lookup in manuals"
                                     'slime-help-lookup-in-manuals-button
                                     'symbol (cdr (assoc :symbol symbol-info))))
+	(insert " ")
+
+	(when (cl-member (cdr (assoc :package symbol-info))
+                         '("COMMON-LISP" "CL") :test 'equalp)
+          (cl-flet ((lookup-in-hyperspec (btn)
+                                         (slime-hyperspec-lookup
+                                          (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+            (insert-button "Lookup in Hyperspec"
+                           'face 'slime-help-button
+                           'action (function lookup-in-hyperspec)
+                           'follow-link t
+                           'help-echo "Lookup variable in Hyperspec")))
+	
         (newline 2)
 
         (insert (slime-help--heading-2 "Direct superclasses"))
