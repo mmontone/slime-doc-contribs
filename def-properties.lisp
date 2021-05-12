@@ -35,7 +35,7 @@
    :symbol-kind-p
    :symbol-variable-p
    :symbol-function-p
-   
+   :symbol-macro-p
    :symbol-generic-function-p
    :symbol-type-p
    :symbol-class-p
@@ -148,6 +148,22 @@ not available is DATA."
         (cons :package (symbol-package symbol))
         (cons :type :type)
         (cons :documentation (documentation symbol 'type))))
+
+(defun macro-properties (symbol &optional shallow)
+  (list (cons :name symbol)
+        (cons :documentation (documentation symbol 'macro))
+        (cons :args (let ((*print-case* :downcase)
+			  (*print-pretty* nil)
+                          (*package* (symbol-package symbol)))
+                      #+nil(format nil "~{~a~^ ~}"
+                                   (mapcar #'format-argument-to-string (swank-backend:arglist symbol))
+                                   )
+                      (prin1-to-string (swank-backend:arglist symbol))))
+        (cons :arglist (swank::arglist symbol))
+        (cons :package (symbol-package symbol))
+        (cons :type :macro)
+	(cons :source (swank/backend:find-source-location (symbol-function symbol)))))
+
 
 (defun function-properties (symbol &optional shallow)
   (list (cons :name symbol)
