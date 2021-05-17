@@ -247,7 +247,7 @@ the CADR of the list."
         package))
       :external))
 
-(defun specialisation-properties (class-name)
+(defun specialisation-properties (class-name &key include-internal)
   (let* ((ignored '(initialize-instance))
          (class (if (symbolp class-name) (find-class class-name) class-name))
          (spec (swank-backend:who-specializes class)))
@@ -256,7 +256,8 @@ the CADR of the list."
               for v in spec
               for symbol = (specialise->symbol v)
               when (and (not (member symbol ignored))
-                        (symbol-external-p symbol (symbol-package (class-name class))))
+                        (or include-internal
+			    (symbol-external-p symbol (symbol-package (class-name class)))))
                 collect (list (cons :name symbol) (cons :documentation (documentation symbol 'function))))
             #'string< :key (alexandria:compose #'princ-to-string #'assoc-name)))))
 
