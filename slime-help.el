@@ -223,13 +223,13 @@
      ((and (listp word) (eql (first word) :fn))
       (insert-button (second word)
                      'action (lambda (btn)
-                               (slime-help-symbol (slime-help--qualify-cl-symbol-name (second word) package)))
+                               (slime-help-symbol (third word)))
                      'follow-link t
                      'help-echo "Describe function"))
      ((and (listp word) (eql (first word) :class))
       (insert-button (second word)
                      'action (lambda (btn)
-                               (slime-help-class (slime-help--qualify-cl-symbol-name (second word) package)))
+                               (slime-help-class (third word)))
                      'follow-link t
                      'help-echo "Describe class"))
      ((and (listp word) (eql (first word) :key))
@@ -237,7 +237,7 @@
      ((and (listp word) (eql (first word) :var))
       (insert-button (second word)
                      'action (lambda (btn)
-                               (slime-help-variable (format "%s::%s" package (second word))))
+                               (slime-help-variable (third word)))
                      'follow-link t
                      'help-echo "Describe variable"))
      (t (error "Don't know how to format")))))

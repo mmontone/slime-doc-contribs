@@ -79,7 +79,9 @@
 
 (defun symbol-properties (symbol &optional shallow)
   "Collects properties about a symbol.
-If TYPE is specified, then SYMBOL is treated as the given TYPE (variable, function, package, etc)."
+If TYPE is specified, then SYMBOL is treated as the given TYPE (variable, function, package, etc).
+If SHALLOW is T, then only fundamental properties are collected.
+Returns a list of alists of properties, one alist for each type of definition that SYMBOL is bound to."
   (let (properties)
     (when (symbol-function-p symbol)
       (push (function-properties symbol shallow) properties))
@@ -414,6 +416,13 @@ the CADR of the list."
   `(let ((it ,arg1))
      (and it ,@args)))
 
+(defun quoted-symbol-p (string)
+  (and (eql (aref string 0) #\`)
+       (eql (aref string (1- (length string))) #\')))
+
+(defun quoted-symbol-name (string)
+  (string-upcase (subseq string 1 (1- (length string)))))
+
 ;; TODO: consider elisp style docstring parsing.
 ;; See: https://www.gnu.org/software/emacs/manual/html_node/elisp/Documentation-Tips.html
 ;; For example, option to only parse quoted words as function/variable references, like `my-function`. Also, consider using `(type)symbol` syntax to disambiguate, like `(function)my-function`.
@@ -429,7 +438,7 @@ PACKAGE: the package to use to read the docstring symbols.
                 (lambda (char)
                   (not
                    (or (alphanumericp char)
-                       (find char "+-*/@$%^&_=<>~:"))))))
+                       (find char "+-*/@$%^&_=<>~:'`"))))))
         (string-test (if case-sensitive
                          'string=
                          'equalp)))
@@ -450,9 +459,9 @@ PACKAGE: the package to use to read the docstring symbols.
 			   (ignore-errors (read-from-string word)))
 		      (let ((symbol (let ((*package* package)) (read-from-string word))))
 			(cond
-			  ((fboundp symbol)
+			  ((ignore-errors (fboundp symbol))
 			   (list :fn word symbol))
-			  ((boundp symbol)
+			  ((ignore-errors (boundp symbol))
 			   (list :var word symbol))
 			  (t ;; I don't know what this is
 			   word))))		  
@@ -467,6 +476,14 @@ PACKAGE: the package to use to read the docstring symbols.
                      ((aand (find-symbol word package)
 			    (boundp it))
                       (list :var word (find-symbol word package)))
+		     ((quoted-symbol-p word)
+		      (let ((symbol (find-symbol (quoted-symbol-name word) package)))
+			(cond
+			  ((fboundp symbol) (list :fn word symbol))
+			  ((boundp symbol) (list :var word symbol))
+			  ((find-class symbol nil) (list :class word symbol))
+			  (t ;; I don't know what this is
+			   word))))
                      (t word))))))
 
 ;; (parse-docstring "asdf" nil)
