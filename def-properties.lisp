@@ -479,6 +479,8 @@ PACKAGE: the package to use to read the docstring symbols.
 		     ((quoted-symbol-p word)
 		      (let ((symbol (find-symbol (quoted-symbol-name word) package)))
 			(cond
+			  ((member (symbol-name symbol) (mapcar 'symbol-name bound-args) :test string-test)
+			   (list :arg word symbol))
 			  ((fboundp symbol) (list :fn word symbol))
 			  ((boundp symbol) (list :var word symbol))
 			  ((find-class symbol nil) (list :class word symbol))
