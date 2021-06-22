@@ -62,7 +62,7 @@
           (run-with-timer 1 nil
                           (lambda ()
                             (kill-buffer (get-buffer "*compilation*")))))
-        (display-buffer)))))
+        (display-buffer buffer)))))
 
 (defun slime-info-symbol (symbol-name)
   "Show a buffer with description of SYMBOL-NAME in an Info buffer."
