@@ -14,6 +14,9 @@
 (defun aget (alist key)
   (cdr (assoc key alist :test 'equalp)))
 
+(defun sort-by-name (infos)
+  (sort infos #'string< :key (lambda (info) (aget info :name))))
+
 (defun info-for-emacs (info)
   (when (aget info :package)
     (setf (cdr (assoc :package info))
@@ -51,11 +54,11 @@
           (cons :name (package-name package))
           (cons :documentation (documentation package t))
           (unless shallow
-            (let (symbol-infos)
+            (let (infos)
               (do-external-symbols (symbol package)
-                (alexandria:when-let ((symbol-info (read-emacs-symbol-info symbol nil t)))
-                  (push symbol-info symbol-infos)))
-              (cons :external-symbols (apply #'append symbol-infos)))))))
+                (dolist (info (read-emacs-symbol-info symbol nil t))
+                  (push info infos)))
+              (cons :external-symbols (sort-by-name infos)))))))
 
 (defun read-emacs-system-info (system-name &optional shallow)
   (let ((system (asdf:find-system system-name)))
@@ -67,17 +70,20 @@
                 )
           (cons :dependencies (remove-if-not 'stringp (asdf:system-depends-on system)))
           (cons :loaded-p (asdf:component-loaded-p system-name))
-          (unless shallow (cons :packages (mapcar 'package-name (asdf-system-packages system-name)))))))
+          (unless shallow
+            (cons :packages (sort (mapcar 'package-name (asdf-system-packages system-name)) #'string<))))))
 
 (defun read-emacs-packages-info ()
-  (mapcar (lambda (package)
-            (read-emacs-package-info package t))
-          (list-all-packages)))
+  (sort-by-name
+   (mapcar (lambda (package)
+             (read-emacs-package-info package t))
+           (list-all-packages))))
 
 (defun read-emacs-systems-info ()
-  (mapcar (lambda (system)
-            (read-emacs-system-info system t))
-          (asdf:registered-systems)))
+  (sort-by-name
+   (mapcar (lambda (system)
+             (read-emacs-system-info system t))
+           (asdf:registered-systems))))
 
 (swank::defslimefun apropos-documentation-for-emacs
     (pattern &optional external-only case-sensitive package)
