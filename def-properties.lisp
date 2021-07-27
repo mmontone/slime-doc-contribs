@@ -153,7 +153,7 @@ not available is DATA."
 
 (defun macro-properties (symbol &optional shallow)
   (list (cons :name symbol)
-        (cons :documentation (documentation symbol 'macro))
+        (cons :documentation (documentation symbol 'function))
         (cons :args (let ((*print-case* :downcase)
 			  (*print-pretty* nil)
                           (*package* (symbol-package symbol)))
