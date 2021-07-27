@@ -164,7 +164,7 @@ not available is DATA."
         (cons :arglist (swank::arglist symbol))
         (cons :package (symbol-package symbol))
         (cons :type :macro)
-	(cons :source (swank/backend:find-source-location (symbol-function symbol)))))
+	(cons :source (macro-source-location symbol))))
 
 
 (defun function-properties (symbol &optional shallow)
@@ -210,6 +210,16 @@ not available is DATA."
 (defun variable-source-location (name)
   (swank/sbcl::definition-source-for-emacs
    (first (sb-introspect:find-definition-sources-by-name name :variable)) :variable name))
+
+;; There must be a better way of getting the source location of a macro ...
+#-sbcl
+(defun macro-source-location (name)
+  nil)
+
+#+sbcl
+(defun macro-source-location (name)
+  (swank/sbcl::definition-source-for-emacs
+   (first (sb-introspect:find-definition-sources-by-name name :macro)) :macro name))
 
 (defun variable-properties (symbol &optional shallow)
   (list (cons :name symbol)
