@@ -357,6 +357,7 @@ the CADR of the list."
           (unless shallow (cons :class-precedence-list (mapcar 'class-name (find-superclasses cl))))
           (unless shallow (cons :direct-superclasses (mapcar 'class-name (closer-mop:class-direct-superclasses cl))))
           (unless shallow (cons :direct-subclasses (mapcar 'class-name (closer-mop:class-direct-subclasses cl))))
+	  (cons :source (swank/backend:find-source-location cl))
           (cons :package (symbol-package class-name))
           (cons :type :class))))
 
