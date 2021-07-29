@@ -207,6 +207,7 @@ not available is DATA."
         (cons :arglist (swank::arglist symbol))
         (cons :package (symbol-package symbol))
         (cons :type :generic-function)
+	(cons :source (swank/backend:find-source-location (symbol-function symbol)))
         (unless shallow
           (cons :methods (closer-mop:generic-function-methods (symbol-function symbol))))))
 
