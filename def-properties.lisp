@@ -217,8 +217,8 @@ not available is DATA."
 
 #+sbcl
 (defun variable-source-location (name)
-  (swank/sbcl::definition-source-for-emacs
-   (first (sb-introspect:find-definition-sources-by-name name :variable)) :variable name))
+  (alexandria:when-let ((definition-source (first (sb-introspect:find-definition-sources-by-name name :variable))))
+    (swank/sbcl::definition-source-for-emacs definition-source :variable name)))
 
 ;; There must be a better way of getting the source location of a macro ...
 #-sbcl
@@ -227,8 +227,8 @@ not available is DATA."
 
 #+sbcl
 (defun macro-source-location (name)
-  (swank/sbcl::definition-source-for-emacs
-   (first (sb-introspect:find-definition-sources-by-name name :macro)) :macro name))
+  (alexandria:when-let ((definition-source (first (sb-introspect:find-definition-sources-by-name name :macro))))
+    (swank/sbcl::definition-source-for-emacs definition-source :macro name)))
 
 (defun variable-properties (symbol &optional shallow)
   (list (cons :name symbol)
