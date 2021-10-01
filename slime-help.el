@@ -245,6 +245,7 @@
      ((and (listp word) (eql (first word) :var))
       (insert-button (second word)
                      'action (lambda (btn)
+			       (ignore btn)
                                (slime-help-variable (third word)))
                      'follow-link t
                      'help-echo "Describe variable"))
@@ -336,6 +337,7 @@
                    (insert " ")
                    (insert-button (format "%s" (cdr (assoc :name symbol-info)))
                                   'action (lambda (btn)
+					    (ignore btn)
                                             (slime-help-symbol (prin1-to-string (cdr (assoc :symbol symbol-info)))))
                                   'follow-link t
                                   'help-echo "Describe symbol")
@@ -382,6 +384,7 @@
           (let ((package-name (cdr (assoc :name package-info))))
             (insert-button package-name
                            'action (lambda (btn)
+				     (ignore btn)
                                      (slime-help-package package-name))
                            'follow-link t
                            'help-echo "Describe package"))
@@ -409,6 +412,7 @@
           (lexical-let ((system-name (cdr (assoc :name system-info))))
             (insert-button system-name
                            'action (lambda (btn)
+				     (ignore btn)
                                      (slime-help-system system-name))
                            'follow-link t
                            'help-echo "Describe system"))
@@ -442,6 +446,7 @@
                              'extra-buttons
                              (lambda ()
                                (cl-flet ((browse-expanders (btn)
+							   (ignore btn)
                                                            (slime-who-macroexpands (prin1-to-string (cdr (assoc :symbol symbol-info))))))
                                  (insert-button "Expanders"
                                                 'face 'slime-help-button
@@ -495,6 +500,7 @@
         (insert (format "This is a %s in package " function-type-name))
         (insert-button package-name
                        'action (lambda (btn)
+				 (ignore btn)
                                  (slime-help-package package-name))
                        'follow-link t
                        'help-echo "Describe package")
@@ -509,6 +515,7 @@
           (newline 2))
 
         (cl-flet ((goto-source (btn)
+			       (ignore btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
                          'action (function goto-source)
@@ -546,6 +553,7 @@
         (when (cl-member (cdr (assoc :package symbol-info))
                          '("COMMON-LISP" "CL") :test 'equalp)
           (cl-flet ((lookup-in-hyperspec (btn)
+					 (ignore btn)
                                          (slime-hyperspec-lookup
                                           (prin1-to-string (cdr (assoc :symbol symbol-info))))))
             (insert-button "Lookup in Hyperspec"
@@ -589,6 +597,7 @@
         (insert (format "This is a VARIABLE in package "))
         (insert-button package-name
                        'action (lambda (btn)
+				 (ignore btn)
                                  (slime-help-package package-name))
                        'follow-link t
                        'help-echo "Describe package")
@@ -605,6 +614,7 @@
         (newline 2)
 
         (cl-flet ((goto-source (btn)
+			       (ignore btn)
                                (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
                          'action (function goto-source)
@@ -649,6 +659,7 @@
         (when (cl-member (cdr (assoc :package symbol-info))
                          '("COMMON-LISP" "CL") :test 'equalp)
           (cl-flet ((lookup-in-hyperspec (btn)
+					 (ignore btn)
                                          (slime-hyperspec-lookup
                                           (prin1-to-string (cdr (assoc :symbol symbol-info))))))
             (insert-button "Lookup in Hyperspec"
@@ -734,6 +745,7 @@
         (dolist (class-name (cdr (assoc :direct-superclasses symbol-info)))
           (insert-button (upcase (symbol-name class-name))
                          'action (lambda (btn)
+				   (ignore btn)
                                    (slime-help-class (symbol-name class-name)))
                          'follow-link t
                          'help-echo "Describe class")
@@ -762,6 +774,7 @@
           (insert (slime-help--heading-2 "Methods"))
           (make-text-button methods-start (point)
                             'action (lambda (btn)
+				      (ignore btn)
                                       (goto-char methods-start)
                                       (outline-toggle-children))
                             'follow-link t)
@@ -771,6 +784,7 @@
             (dolist (symbol-info methods)
               (insert-button (format "%s" (upcase (prin1-to-string (cdr (assoc :name symbol-info)))))
                              'action (lambda (btn)
+				       (ignore btn)
                                        (slime-help-symbol (prin1-to-string (cdr (assoc :name symbol-info)))))
                              'follow-link t
                              'help-echo "Describe symbol")
@@ -863,6 +877,7 @@
 
         (when (not (cdr (assoc :loaded-p system-info)))
           (cl-flet ((load-system (btn)
+				 (ignore btn)
                                  (slime-load-system system-name)))
             (insert-button "Load"
                            'action (function load-system)
@@ -880,6 +895,7 @@
             (insert "* ")
             (insert-button dependency
                            'action (lambda (btn)
+				     (ignore btn)
                                      (slime-help-system dependency))
                            'follow-link t
                            'help-echo "Describe system")
@@ -893,6 +909,7 @@
           (dolist (package-name (cdr (assoc :packages system-info)))
             (insert-button package-name
                            'action (lambda (btn)
+				     (ignore btn)
                                      (slime-help-package package-name))
                            'follow-link t
                            'help-echo "Describe package")
@@ -925,7 +942,7 @@
                  (add-text-properties
                   start (point)
                   (list 'type prop
-                        'action (lambda (btn) (slime-help-symbol designator))
+                        'action (lambda (btn) (ignore btn) (slime-help-symbol designator))
                         'weight 'bold
                         'button t
                         'apropos-label namespace
