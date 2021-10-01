@@ -27,12 +27,20 @@
 
 ;;; Code:
 
-(require 'cl)
 (require 'map)
 (require 'button)
 (require 'lisp-mode)
 (require 'slime)
 (require 'subr-x)
+
+(defgroup slime-help nil
+  "Common Lisp documentation browser."
+  :prefix "slime-help-"
+  :group 'slime)
+
+(defgroup slime-help-faces nil
+  "Faces of SLIME-HELP."
+  :group 'slime-help)
 
 (defface slime-help-heading-1
   '((t :weight bold
@@ -209,7 +217,7 @@
 (defun slime-help--qualify-cl-symbol-name (symbol-name &optional package)
   "Qualify a Common Lisp SYMBOL-NAME using PACKAGE.  If SYMBOL-NAME is already qualified, nothing is done.  If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
   (let ((package (or package (slime-current-package))))
-    (if (position ?: symbol-name)
+    (if (cl-position ?: symbol-name)
         ;; already qualified
         symbol-name
       (format "%s::%s" package symbol-name))))
@@ -249,7 +257,7 @@
     (error "No symbol given"))
   (let ((symbol-infos (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name))))))
     (dolist (symbol-info symbol-infos)
-      (case (cdr (assoc :type symbol-info))
+      (cl-case (cdr (assoc :type symbol-info))
         (:function (slime-help-function symbol-name))
         (:generic-function (slime-help-generic-function symbol-name))
         (:macro (slime-help-macro symbol-name))
@@ -263,8 +271,8 @@
 
 (defun slime-help--first-line (string)
   "Return the first line of the `STRING'."
-  (let ((pos (position ?\n string)))
-    (if (null pos) string (subseq string 0 pos))))
+  (let ((pos (cl-position ?\n string)))
+    (if (null pos) string (cl-subseq string 0 pos))))
 
 (defun slime-help--kill-current-buffer ()
   (interactive)
@@ -274,7 +282,7 @@
   "Kill all slime-help buffers at once."
   (interactive)
   (mapcar 'kill-buffer
-          (remove-if-not
+          (cl-remove-if-not
            (lambda (buffer)
              (string-prefix-p "*slime-help" (buffer-name buffer)))
            (buffer-list))))
@@ -290,7 +298,7 @@
     (goto-char 0)
     (pop-to-buffer buffer)))
 
-(defun* slime-help-package (package-name)
+(cl-defun slime-help-package (package-name)
   "Display information about Common Lisp package named PACKAGE-NAME."
   (interactive (list (slime-read-package-name "Describe package: ")))
   (when (not package-name)
@@ -299,7 +307,7 @@
   (let ((buffer-name (format "*slime-help: %s package*" package-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
-      (return-from slime-help-package))
+      (cl-return-from slime-help-package))
     (let* ((package-info (slime-eval `(swank-help:read-emacs-package-info ,package-name)))
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
@@ -324,7 +332,7 @@
         (newline 2)
         (cl-flet ((format-exported-definition
                    (symbol-info)
-                   (insert (propertize (subseq (symbol-name (cdr (assoc :type symbol-info))) 1) 'face 'slime-help-type))
+                   (insert (propertize (cl-subseq (symbol-name (cdr (assoc :type symbol-info))) 1) 'face 'slime-help-type))
                    (insert " ")
                    (insert-button (format "%s" (cdr (assoc :name symbol-info)))
                                   'action (lambda (btn)
@@ -344,8 +352,8 @@
                              ("Functions" . :function)
                              ("Generic functions" . :generic-function))))
             (dolist (def-type def-types)
-              (let ((symbol-infos (remove-if-not (lambda (x)
-                                                   (equalp (cdr (assoc :type x)) (cdr def-type)))
+              (let ((symbol-infos (cl-remove-if-not (lambda (x)
+                                                   (cl-equalp (cdr (assoc :type x)) (cdr def-type)))
                                                  (cdr (assoc :external-symbols package-info)))))
                 (when symbol-infos
                   (insert (slime-help--heading-3 (car def-type)))
@@ -358,14 +366,14 @@
 
 ;;(slime-help-package "ALEXANDRIA")
 
-(defun* slime-help-packages ()
+(cl-defun slime-help-packages ()
   "Display information about Common Lisp packages."
   (interactive)
 
   (let ((buffer-name "*slime-help: COMMON LISP packages*"))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
-      (return-from slime-help-packages))
+      (cl-return-from slime-help-packages))
 
     (let* ((packages-info (slime-eval `(swank-help:read-emacs-packages-info)))
            (buffer (get-buffer-create buffer-name)))
@@ -384,7 +392,7 @@
         (slime-help--open-buffer)
         nil))))
 
-(defun* slime-help-systems ()
+(cl-defun slime-help-systems ()
   "Display information about registered ASDF systems."
 
   (interactive)
@@ -392,7 +400,7 @@
   (let ((buffer-name "*slime-help: registered ASDF systems*"))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
-      (return-from slime-help-systems))
+      (cl-return-from slime-help-systems))
 
     (let* ((systems-info (slime-eval `(swank-help:read-emacs-systems-info)))
            (buffer (get-buffer-create buffer-name)))
@@ -471,13 +479,13 @@
 ;; (slime-help-generic-function "CL:PRINT-OBJECT")
 
 ;; TODO: remove the following function. I think it is better to implement individual functions for each type of funcallable (macro, function, generic-functions), as they have significant differences.
-(defun* slime-help--funcallable (symbol-name symbol-info function-type &rest args)
+(cl-defun slime-help--funcallable (symbol-name symbol-info function-type &rest args)
   "Display documentation about Common Lisp the funcallable FUNCTION-TYPE to SYMBOL-NAME. SYMBOL-INFO contains the collected SWANK documentation. ARGS contains additional arguments, like 'extra-buttons."
-  (let* ((function-type-name (subseq (symbol-name function-type) 1))
+  (let* ((function-type-name (cl-subseq (symbol-name function-type) 1))
          (buffer-name (format "*slime-help: %s %s*" symbol-name function-type-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
-      (return-from slime-help--funcallable))
+      (cl-return-from slime-help--funcallable))
 
     (let* ((package-name (cdr (assoc :package symbol-info)))
            (buffer (get-buffer-create buffer-name)))
@@ -527,8 +535,8 @@
                          'help-echo "Disassemble function"))
         (insert " ")
 
-        (when (getf args 'extra-buttons)
-          (funcall (getf args 'extra-buttons)))
+        (when (cl-getf args 'extra-buttons)
+          (funcall (cl-getf args 'extra-buttons)))
 
         (insert (slime-help--button "Lookup in manuals"
                                     'slime-help-lookup-in-manuals-button
@@ -548,8 +556,8 @@
 
         ;; TODO: add a collapsible extra section with debugging actions, like toggle tracing, toggle profiling, perhaps disassemble too.
 
-        (when (getf args 'continuation)
-          (funcall (getf args 'continuation)))
+        (when (cl-getf args 'continuation)
+          (funcall (cl-getf args 'continuation)))
 
         (slime-help--open-buffer)
         nil))))
@@ -559,7 +567,7 @@
 ;;(slime-help-function "SPLIT-SEQUENCE:SPLIT-SEQUENCE")
 ;;(slime-help-macro "ALEXANDRIA:WITH-GENSYMS")
 
-(defun* slime-help-variable (symbol-name)
+(cl-defun slime-help-variable (symbol-name)
   "Display documentation about Common Lisp variable bound to SYMBOL-NAME."
   (interactive (list (slime-read-symbol-name "Describe variable: ")))
   (when (not symbol-name)
@@ -568,7 +576,7 @@
   (let ((buffer-name (format "*slime-help: %s variable*" symbol-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
-      (return-from slime-help-variable))
+      (cl-return-from slime-help-variable))
 
     (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :variable)))
            (package-name (cdr (assoc :package symbol-info)))
@@ -654,7 +662,7 @@
 
 ;; (slime-help-variable "*STANDARD-OUTPUT*")
 
-(defun* slime-help-class (symbol-name)
+(cl-defun slime-help-class (symbol-name)
   "Display documentation about Common Lisp class bound to SYMBOL-NAME."
   (interactive (list (slime-read-symbol-name "Describe class: ")))
   (when (not symbol-name)
@@ -663,7 +671,7 @@
   (let ((buffer-name (format "*slime-help: %s class*" symbol-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
-      (return-from slime-help-class))
+      (cl-return-from slime-help-class))
 
     (let* ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :class)))
            (package-name (cdr (assoc :package symbol-info)))
@@ -816,7 +824,7 @@
     ;; time.
     source))
 
-(defun* slime-help-system (system-name)
+(cl-defun slime-help-system (system-name)
   "Display documentation about ASDF system named SYSTEM-NAME."
   (interactive (list (slime-read-system-name "Describe system")))
   (when (not system-name)
@@ -825,7 +833,7 @@
   (let ((buffer-name (format "*slime-help: %s system*" system-name)))
     (when (get-buffer buffer-name)
       (pop-to-buffer buffer-name)
-      (return-from slime-help-system))
+      (cl-return-from slime-help-system))
 
     (let* ((system-info (slime-eval `(swank-help:read-emacs-system-info ,system-name)))
            (buffer (get-buffer-create buffer-name)))
@@ -1088,11 +1096,6 @@ search for matches for any two (or more) of those words."
    ;; add submenu to SLIME menu
    ;;(slime-help--add-menu-to-slime)
    (slime-help--replace-slime-documentation-menu)))
-
-(defgroup slime-help nil
-  "Common Lisp documentation browser"
-  :prefix "slime-help-"
-  :group 'slime)
 
 (defcustom slime-help-parse-docstrings t
   "When enabled, docstrings are parsed and function arguments and code references are formatted accordingly."
