@@ -231,7 +231,13 @@
      ((and (listp word) (eql (first word) :fn))
       (insert-button (second word)
                      'action (lambda (btn)
-                               (slime-help-symbol (third word)))
+                               (slime-help-function (third word)))
+                     'follow-link t
+                     'help-echo "Describe function"))
+     ((and (listp word) (eql (first word) :macro))
+      (insert-button (second word)
+                     'action (lambda (btn)
+                               (slime-help-macro (third word)))
                      'follow-link t
                      'help-echo "Describe function"))
      ((and (listp word) (eql (first word) :class))
