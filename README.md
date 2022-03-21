@@ -6,11 +6,11 @@ SLIME-HELP is inspired by helpful-mode, but for browsing Common Lisp documentati
 
 SLIME-INFO uses Emacs info-mode for displaying Common Lisp documentation.
 
-NOTE THAT THIS IS VERY MUCH WORK IN PROGRESS AT THIS MOMENT.
-
 ![slime-help](slime-help.png "slime-help screenshot")
 
 ## Install
+
+ℹ️ Please consider using [SLIME :star:](https://github.com/mmontone/slime-star), that comes with this extension preinstalled.
 
 Clone this repository using git `--recursive` option, as this repository contains submodules.
 
