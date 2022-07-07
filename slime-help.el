@@ -760,6 +760,22 @@
 
         ;; TODO: show a collapsable (outline-mode?) section with more information about the class
         ;; like class descendants and list of subclasses
+        ;; let's show direct-subclasses for now, with a limit
+        (let ((max-subclasses 25)
+              (subclasses (cdr (assoc :direct-subclasses symbol-info))))
+          (insert (slime-help--heading-2 "Direct subclasses"))
+          (newline 2)
+          (dolist (class-name (subseq subclasses 0 (min max-subclasses (length subclasses))))
+            (insert-button (upcase (symbol-name class-name))
+                           'action (lambda (btn)
+                                     (ignore btn)
+                                     (slime-help-class (symbol-name class-name)))
+                           'follow-link t
+                           'help-echo "Describe class")
+            (insert " "))
+          (when (> (length subclasses) max-subclasses)
+            (insert "and more"))
+          (newline 2))
 
         ;; TODO: show more information about slots
         (let ((slots (cdr (assoc :slots symbol-info))))
