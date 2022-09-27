@@ -255,6 +255,9 @@
                                (slime-help-variable (third word)))
                      'follow-link t
                      'help-echo "Describe variable"))
+     ;; We don't have support for special-operators
+     ((and (listp word) (eql (first word) :special-operator))
+      (insert (second word)))
      (t (error "Don't know how to format")))))
 
 (defun slime-help-symbol (symbol-name)
