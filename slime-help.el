@@ -230,19 +230,19 @@
       (insert (propertize (second word) 'face 'slime-help-argument)))
      ((and (listp word) (eql (first word) :fn))
       (insert-button (second word)
-                     'action (lambda (btn)
+                     'action (lambda (_btn)
                                (slime-help-function (third word)))
                      'follow-link t
                      'help-echo "Describe function"))
      ((and (listp word) (eql (first word) :macro))
       (insert-button (second word)
-                     'action (lambda (btn)
+                     'action (lambda (_btn)
                                (slime-help-macro (third word)))
                      'follow-link t
                      'help-echo "Describe function"))
      ((and (listp word) (eql (first word) :class))
       (insert-button (second word)
-                     'action (lambda (btn)
+                     'action (lambda (_btn)
                                (slime-help-class (third word)))
                      'follow-link t
                      'help-echo "Describe class"))
@@ -250,15 +250,17 @@
       (insert (propertize (second word) 'face 'slime-help-keyword)))
      ((and (listp word) (eql (first word) :var))
       (insert-button (second word)
-                     'action (lambda (btn)
-			       (ignore btn)
-                               (slime-help-variable (third word)))
+                     'action (lambda (_btn)
+			       (slime-help-variable (third word)))
                      'follow-link t
                      'help-echo "Describe variable"))
-     ;; We don't have support for special-operators
      ((and (listp word) (eql (first word) :special-operator))
-      (insert (second word)))
-     (t (error "Don't know how to format")))))
+      (insert-button (second word)
+                     'action (lambda (_btn)
+                               (slime-help-special-operator (third word)))
+                     'follow-link t
+                     'help-echo "Describe special operator"))
+     (t (error "Don't know how to format: %s" word)))))
 
 (defun slime-help-symbol (symbol-name)
   "Open a help buffer for each kind of SYMBOL-NAME."
@@ -442,6 +444,8 @@
       (error "Could not read symbol informartion: %s" symbol-name))
     (slime-help--funcallable symbol-name symbol-info :function)))
 
+;; (slime-help-function "ALEXANDRIA:FLATTEN")
+
 (defun slime-help-macro (symbol-name)
   "Display documentation about Common Lisp macro bound to SYMBOL-NAME."
   (interactive (list (slime-read-symbol-name "Describe macro: ")))
@@ -465,6 +469,56 @@
                                (insert " ")))))
 
 ;; (slime-help-macro "ALEXANDRIA:WITH-GENSYMS")
+
+(cl-defun slime-help-special-operator (symbol-name)
+  "Display documentation about Common Lisp macro bound to SYMBOL-NAME."
+  (interactive (list (slime-read-symbol-name "Describe special operator: ")))
+  (when (not symbol-name)
+    (error "No symbol given"))
+  (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :special-operator))))
+    (when (null symbol-info)
+      (error "Could not read symbol information: %s" symbol-name))
+
+    (let ((buffer-name (format "*slime-help: %s special operator*" symbol-name)))
+      
+      (when (get-buffer buffer-name)
+	(pop-to-buffer buffer-name)
+	(cl-return-from slime-help-special-operator))
+
+      (let* ((package-name (cdr (assoc :package symbol-info)))
+             (buffer (get-buffer-create buffer-name)))
+	(with-current-buffer buffer
+          (insert (slime-help--heading-1 (cdr (assoc :name symbol-info))))
+          (newline 2)
+          (insert (format "This is a special operator in package "))
+          (insert-button package-name
+			 'action (lambda (btn)
+				   (ignore btn)
+                                   (slime-help-package package-name))
+			 'follow-link t
+			 'help-echo "Describe package")
+
+          (when (cdr (assoc :documentation symbol-info))
+	    (newline 2)
+            (slime-help--insert-documentation symbol-info)
+	    (newline 2))
+
+	  (when (cl-member (cdr (assoc :package symbol-info))
+                         '("COMMON-LISP" "CL") :test 'equalp)
+          (cl-flet ((lookup-in-hyperspec (btn)
+					 (ignore btn)
+                                         (slime-hyperspec-lookup
+                                          (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+            (insert-button "Lookup in Hyperspec"
+                           'face 'slime-help-button
+                           'action (function lookup-in-hyperspec)
+                           'follow-link t
+                           'help-echo "Lookup variable in Hyperspec")))
+	  
+	  (slime-help--open-buffer)
+          nil)))))
+
+;; (slime-help-special-operator "CL:IF")
 
 (defun slime-help-generic-function (symbol-name)
   "Display documentation about Common Lisp generic function bound to SYMBOL-NAME."
