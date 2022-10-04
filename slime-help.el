@@ -769,7 +769,7 @@
 
         ;; buttons
         (cl-flet ((goto-source (btn)
-                               (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+                    (slime-edit-definition-other-window (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "Source"
                          'face 'slime-help-button
                          'action (function goto-source)
@@ -777,7 +777,7 @@
                          'help-echo "Go to definition source code"))
         (insert " ")
         (cl-flet ((browse-references (btn)
-                                     (slime-who-references (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+                    (slime-who-references (prin1-to-string (cdr (assoc :symbol symbol-info))))))
           (insert-button "References"
                          'face 'slime-help-button
                          'action (function browse-references)
@@ -793,8 +793,8 @@
 	(when (cl-member (cdr (assoc :package symbol-info))
                          '("COMMON-LISP" "CL") :test 'equalp)
           (cl-flet ((lookup-in-hyperspec (btn)
-                                         (slime-hyperspec-lookup
-                                          (prin1-to-string (cdr (assoc :symbol symbol-info))))))
+                      (slime-hyperspec-lookup
+                       (prin1-to-string (cdr (assoc :symbol symbol-info))))))
             (insert-button "Lookup in Hyperspec"
                            'face 'slime-help-button
                            'action (function lookup-in-hyperspec)
