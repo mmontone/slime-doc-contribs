@@ -102,7 +102,7 @@ The result is a list of property lists."
 (defun some-documentation (symbol)
   (some (lambda (type)
           (documentation symbol type))
-        '(function variable type structure set t)))
+        '(function variable type structure setf t)))
 
 (defun apropos-symbols-documentation (pattern external-only case-sensitive package)
   (let ((packages (or package (remove (find-package :keyword)
