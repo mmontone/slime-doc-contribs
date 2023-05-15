@@ -162,8 +162,7 @@ If PRINT-DOCSTRING the the results docstrings are made part of the output."
   (let ((packages (or package (remove (find-package :keyword)
                                       (list-all-packages))))
         (matcher (make-apropos-documentation-matcher
-                  (parse-apropos-pattern string-designator) nil))
-        (result))
+                  (parse-apropos-pattern string-designator) nil)))
     (with-package-iterator (next packages :external :internal)
       (loop (multiple-value-bind (morep symbol) (next)
               (when (not morep) (return))
@@ -172,13 +171,9 @@ If PRINT-DOCSTRING the the results docstrings are made part of the output."
                            doc
                            (funcall matcher doc))
                   (if print-docstring
-                      (pushnew (cons symbol doc) result :key #'car)
-                      (pushnew symbol result)))))))
-    (dolist (res result)
-      (if print-docstring
-          (format t "~a : ~a" (car res) (docstring-summary (cdr res)))
-          (format t "~a" res))
-      (terpri))
+		      (format t "~a : ~a" symbol (docstring-summary doc))
+		      (format t "~a" symbol))
+		  (terpri))))))
     (values)))
 
 (defun apropos-list (string-designator &optional package external-only)
