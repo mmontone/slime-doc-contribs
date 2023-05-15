@@ -2,12 +2,15 @@
 
 (defpackage :swank-help
   (:use :cl :def-properties)
+  (:shadow #:apropos #:apropos-list)
   (:export
    :read-emacs-symbol-info
    :read-emacs-package-info
    :read-emacs-system-info
    :read-emacs-packages-info
-   :read-emacs-systems-info))
+   :read-emacs-systems-info
+   :apropos
+   :apropos-list))
 
 (in-package :swank-help)
 
@@ -96,27 +99,20 @@ The result is a list of property lists."
     ;; who cannot be meaningfully described.
     (mapcan (swank::listify #'swank::briefly-describe-symbol-for-emacs)
             (sort (remove-duplicates
-                   (apropos-symbols-documentation pattern external-only case-sensitive package))
+                   (apropos-symbols-documentation pattern
+                                                  :external-only external-only
+                                                  :case-sensitive case-sensitive
+                                                  :package package))
                   #'swank::present-symbol-before-p))))
 
 (defun some-documentation (symbol)
-  (some (lambda (type)
-          (documentation symbol type))
-        '(function variable type structure setf t)))
-
-(defun apropos-symbols-documentation (pattern external-only case-sensitive package)
-  (let ((packages (or package (remove (find-package :keyword)
-                                      (list-all-packages))))
-        (matcher (make-apropos-documentation-matcher pattern case-sensitive))
-        (result))
-    (with-package-iterator (next packages :external :internal)
-      (loop (multiple-value-bind (morep symbol) (next)
-              (cond ((not morep) (return))
-                    ((and (if external-only (swank::symbol-external-p symbol) t)
-                          (some-documentation symbol)
-                          (funcall matcher (some-documentation symbol)))
-                     (push symbol result))))))
-    result))
+  ;; Trick to disable warnings from DOCUMENTATION function
+  ;; DOCUMENTATION function complains on some type of DOC-TYPE arguments signaling  a warning.
+  ;; I temporarily rebind *ERROR-OUTPUT* so those warnings don't appear on the REPL output.
+  (let ((*error-output* (make-string-output-stream)))
+    (some (lambda (type)
+            (documentation symbol type))
+          '(function variable type structure setf t))))
 
 (defun make-apropos-documentation-matcher (pattern case-sensitive)
   (let ((chr= (if case-sensitive #'char= #'char-equal)))
@@ -126,5 +122,80 @@ The result is a list of property lists."
              (if (stringp pattern)
                  (list pattern)
                  pattern)))))
+
+(defun apropos-symbols-documentation (pattern &key external-only case-sensitive package return-docs)
+  (let ((packages (or package (remove (find-package :keyword)
+                                      (list-all-packages))))
+        (matcher (make-apropos-documentation-matcher pattern case-sensitive))
+        (result))
+    (with-package-iterator (next packages :external :internal)
+      (loop (multiple-value-bind (morep symbol) (next)
+              (when (not morep) (return))
+              (let ((doc (some-documentation symbol)))
+                (when (and (if external-only (swank::symbol-external-p symbol) t)
+                           doc
+                           (funcall matcher doc))
+                  (if return-docs
+                      (push (cons symbol doc) result)
+                      (push symbol result)))))))
+    result))
+
+;; Provide an apropos functions that matches on name and docstrings
+
+(defun parse-apropos-pattern (string)
+  (split-sequence:split-sequence #\space string :remove-empty-subseqs t))
+
+(defun docstring-summary (docstring)
+  (let ((first-line (with-input-from-string (s docstring)
+                      (uiop/stream:slurp-stream-line s))))
+    (let ((dotpos (position #\. first-line)))
+      (if dotpos
+          (subseq first-line 0 (1+ dotpos))
+          first-line))))
+
+(defun apropos (string-designator &optional package external-only (print-docstring t))
+  "Briefly describe all symbols which contain the specified STRING.
+If PACKAGE is supplied then only describe symbols present in
+that package. If EXTERNAL-ONLY then only describe
+external symbols in the specified package.)
+If PRINT-DOCSTRING the the results docstrings are made part of the output."
+  (let ((packages (or package (remove (find-package :keyword)
+                                      (list-all-packages))))
+        (matcher (make-apropos-documentation-matcher
+                  (parse-apropos-pattern string-designator) nil))
+        (result))
+    (with-package-iterator (next packages :external :internal)
+      (loop (multiple-value-bind (morep symbol) (next)
+              (when (not morep) (return))
+              (let ((doc (some-documentation symbol)))
+                (when (and (if external-only (swank::symbol-external-p symbol) t)
+                           doc
+                           (funcall matcher doc))
+                  (if print-docstring
+                      (pushnew (cons symbol doc) result :key #'car)
+                      (pushnew symbol result)))))))
+    (dolist (res result)
+      (if print-docstring
+          (format t "~a : ~a" (car res) (docstring-summary (cdr res)))
+          (format t "~a" res))
+      (terpri))
+    (values)))
+
+(defun apropos-list (string-designator &optional package external-only)
+  "Like SWANK-HELP:APROPOS, except that it returns a list of the symbols found instead of describing them."
+  (let ((packages (or package (remove (find-package :keyword)
+                                      (list-all-packages))))
+        (matcher (make-apropos-documentation-matcher
+                  (parse-apropos-pattern string-designator) nil))
+        (result))
+    (with-package-iterator (next packages :external :internal)
+      (loop (multiple-value-bind (morep symbol) (next)
+              (when (not morep) (return))
+              (let ((doc (some-documentation symbol)))
+                (when (and (if external-only (swank::symbol-external-p symbol) t)
+                           doc
+                           (funcall matcher doc))
+                  (pushnew symbol result))))))
+    result))
 
 (provide :swank-help)
