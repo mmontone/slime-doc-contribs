@@ -33,8 +33,7 @@
                 (parse-docstring (aget info :documentation)
                                  (when (member (aget info :type) '(:function :generic-function :macro))
                                    (list-lambda-list-args
-                                    (read-from-string (aget info :args))
-                                    ))
+                                    (read-from-string (aget info :args))))
                                  :package (find-package (aget info :package))))
           info))
   (push (cons :symbol (cdr (assoc :name info))) info)
@@ -44,8 +43,9 @@
 (defun read-emacs-symbol-info (symbol &optional kind shallow)
   (let ((infos (symbol-properties symbol shallow)))
     (if kind
-        (alexandria:when-let ((info (find kind infos :key (lambda (info)
-                                                            (aget info :type)))))
+        (alexandria:when-let ((info (find kind infos
+                                          :key (lambda (info)
+                                                 (aget info :type)))))
           (info-for-emacs info))
         (mapcar 'info-for-emacs infos))))
 
@@ -72,10 +72,13 @@
                 (slot-value system 'asdf/system::description)
                 ;;(asdf:system-description system)
                 )
-          (cons :dependencies (remove-if-not 'stringp (asdf:system-depends-on system)))
+          (cons :dependencies (remove-if-not 'stringp
+                                             (asdf:system-depends-on system)))
           (cons :loaded-p (asdf:component-loaded-p system-name))
           (unless shallow
-            (cons :packages (sort (mapcar 'package-name (asdf-system-packages system-name)) #'string<))))))
+            (cons :packages (sort (mapcar 'package-name
+                                          (asdf-system-packages system-name))
+                                  #'string<))))))
 
 (defun read-emacs-packages-info ()
   (sort-by-name
