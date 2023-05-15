@@ -1,4 +1,5 @@
 (require :def-properties (merge-pathnames #p"cl-def-properties/module.lisp" (uiop/pathname:pathname-directory-pathname *load-pathname*)))
+(require :split-sequence)
 
 (defpackage :swank-help
   (:use :cl :def-properties)
@@ -132,12 +133,14 @@ The result is a list of property lists."
       (loop (multiple-value-bind (morep symbol) (next)
               (when (not morep) (return))
               (let ((doc (some-documentation symbol)))
-                (when (and (if external-only (swank::symbol-external-p symbol) t)
-                           doc
-                           (funcall matcher doc))
-                  (if return-docs
-                      (push (cons symbol doc) result)
-                      (push symbol result)))))))
+                (when (or (not external-only) (swank::symbol-external-p symbol))
+                  (let ((name-and-doc (if doc
+                                          (format nil "~a~%~a" symbol doc)
+                                          (symbol-name symbol))))
+                    (when (funcall matcher name-and-doc)
+                      (if return-docs
+                          (push (cons symbol doc) result)
+                          (push symbol result)))))))))
     result))
 
 ;; Provide an apropos functions that matches on name and docstrings
@@ -168,14 +171,14 @@ If PRINT-DOCSTRING the the results docstrings are made part of the output."
               (when (not morep) (return))
               (let ((doc (some-documentation symbol)))
                 (when (or (not external-only) (swank::symbol-external-p symbol))
-		  (let ((name-and-doc (if doc
-					  (format nil "~a~%~a" symbol doc)
-					  (symbol-name symbol))))
+                  (let ((name-and-doc (if doc
+                                          (format nil "~a~%~a" symbol doc)
+                                          (symbol-name symbol))))
                     (when (funcall matcher name-and-doc)
-		      (if (and print-docstring doc)
-			  (format t "~a : ~a" symbol (docstring-summary doc))
-			  (format t "~a" symbol))
-		      (terpri))))))))
+                      (if (and print-docstring doc)
+                          (format t "~a : ~a" symbol (docstring-summary doc))
+                          (format t "~a" symbol))
+                      (terpri))))))))
     (values)))
 
 (defun apropos-list (string-designator &optional package external-only)
@@ -188,11 +191,11 @@ If PRINT-DOCSTRING the the results docstrings are made part of the output."
     (with-package-iterator (next packages :external :internal)
       (loop (multiple-value-bind (morep symbol) (next)
               (when (not morep) (return))
-	      (let ((doc (some-documentation symbol)))
+              (let ((doc (some-documentation symbol)))
                 (when (or (not external-only) (swank::symbol-external-p symbol))
-		  (let ((name-and-doc (if doc
-					  (format nil "~a~%~a" symbol doc)
-					  (symbol-name symbol))))
+                  (let ((name-and-doc (if doc
+                                          (format nil "~a~%~a" symbol doc)
+                                          (symbol-name symbol))))
                     (when (funcall matcher name-and-doc)
                       (pushnew symbol result))))))))
     result))
