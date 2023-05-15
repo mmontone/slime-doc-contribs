@@ -167,13 +167,15 @@ If PRINT-DOCSTRING the the results docstrings are made part of the output."
       (loop (multiple-value-bind (morep symbol) (next)
               (when (not morep) (return))
               (let ((doc (some-documentation symbol)))
-                (when (and (if external-only (swank::symbol-external-p symbol) t)
-                           doc
-                           (funcall matcher doc))
-                  (if print-docstring
-		      (format t "~a : ~a" symbol (docstring-summary doc))
-		      (format t "~a" symbol))
-		  (terpri))))))
+                (when (or (not external-only) (swank::symbol-external-p symbol))
+		  (let ((name-and-doc (if doc
+					  (format nil "~a~%~a" symbol doc)
+					  (symbol-name symbol))))
+                    (when (funcall matcher name-and-doc)
+		      (if (and print-docstring doc)
+			  (format t "~a : ~a" symbol (docstring-summary doc))
+			  (format t "~a" symbol))
+		      (terpri))))))))
     (values)))
 
 (defun apropos-list (string-designator &optional package external-only)
