@@ -53,7 +53,7 @@
                                    (format nil "~a~%~%~a" (string-trim '(#\space #\newline #\tab) docstring) hyperspec-text)
                                    hyperspec-text))
                        :stream f))
-              (terpri f))))))))
+              (terpri f)(terpri f))))))))
 
 ;; (create-file-with-docstrings "/mnt/sdb2/home/marian/src/lisp/slime-star/slime-doc-contribs/clhs-docstrings.gen.lisp")
 
