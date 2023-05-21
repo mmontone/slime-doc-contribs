@@ -32,6 +32,7 @@
 (require 'lisp-mode)
 (require 'slime)
 (require 'subr-x)
+(require 'cl-lib)
 
 (defgroup slime-help nil
   "Common Lisp documentation browser."
@@ -226,36 +227,36 @@
   (dolist (word docstring)
     (cond
      ((stringp word) (insert (slime-help--propertize-docstring word)))
-     ((and (listp word) (eql (first word) :arg))
-      (insert (propertize (second word) 'face 'slime-help-argument)))
-     ((and (listp word) (eql (first word) :fn))
-      (insert-button (second word)
+     ((and (listp word) (eql (cl-first word) :arg))
+      (insert (propertize (cl-second word) 'face 'slime-help-argument)))
+     ((and (listp word) (eql (cl-first word) :fn))
+      (insert-button (cl-second word)
                      'action (lambda (_btn)
                                (slime-help-function (third word)))
                      'follow-link t
                      'help-echo "Describe function"))
-     ((and (listp word) (eql (first word) :macro))
-      (insert-button (second word)
+     ((and (listp word) (eql (cl-first word) :macro))
+      (insert-button (cl-second word)
                      'action (lambda (_btn)
                                (slime-help-macro (third word)))
                      'follow-link t
                      'help-echo "Describe function"))
-     ((and (listp word) (eql (first word) :class))
-      (insert-button (second word)
+     ((and (listp word) (eql (cl-first word) :class))
+      (insert-button (cl-second word)
                      'action (lambda (_btn)
                                (slime-help-class (third word)))
                      'follow-link t
                      'help-echo "Describe class"))
-     ((and (listp word) (eql (first word) :key))
-      (insert (propertize (second word) 'face 'slime-help-keyword)))
-     ((and (listp word) (eql (first word) :var))
-      (insert-button (second word)
+     ((and (listp word) (eql (cl-first word) :key))
+      (insert (propertize (cl-second word) 'face 'slime-help-keyword)))
+     ((and (listp word) (eql (cl-first word) :var))
+      (insert-button (cl-second word)
                      'action (lambda (_btn)
 			       (slime-help-variable (third word)))
                      'follow-link t
                      'help-echo "Describe variable"))
-     ((and (listp word) (eql (first word) :special-operator))
-      (insert-button (second word)
+     ((and (listp word) (eql (cl-first word) :special-operator))
+      (insert-button (cl-second word)
                      'action (lambda (_btn)
                                (slime-help-special-operator (third word)))
                      'follow-link t
@@ -504,7 +505,7 @@
 	    (newline 2))
 
 	  (when (cl-member (cdr (assoc :package symbol-info))
-                         '("COMMON-LISP" "CL") :test 'equalp)
+                         '("COMMON-LISP" "CL") :test 'cl-equalp)
           (cl-flet ((lookup-in-hyperspec (btn)
 					 (ignore btn)
                                          (slime-hyperspec-lookup
@@ -614,7 +615,7 @@
         (insert " ")
 
         (when (cl-member (cdr (assoc :package symbol-info))
-                         '("COMMON-LISP" "CL") :test 'equalp)
+                         '("COMMON-LISP" "CL") :test 'cl-equalp)
           (cl-flet ((lookup-in-hyperspec (btn)
 					 (ignore btn)
                                          (slime-hyperspec-lookup
@@ -720,7 +721,7 @@
         (insert " ")
 
         (when (cl-member (cdr (assoc :package symbol-info))
-                         '("COMMON-LISP" "CL") :test 'equalp)
+                         '("COMMON-LISP" "CL") :test 'cl-equalp)
           (cl-flet ((lookup-in-hyperspec (btn)
 					 (ignore btn)
                                          (slime-hyperspec-lookup
@@ -791,7 +792,7 @@
 	(insert " ")
 
 	(when (cl-member (cdr (assoc :package symbol-info))
-                         '("COMMON-LISP" "CL") :test 'equalp)
+                         '("COMMON-LISP" "CL") :test 'cl-equalp)
           (cl-flet ((lookup-in-hyperspec (btn)
                       (slime-hyperspec-lookup
                        (prin1-to-string (cdr (assoc :symbol symbol-info))))))
@@ -1089,7 +1090,7 @@ search for matches for any two (or more) of those words."
         `(swank-help:apropos-documentation-for-emacs
           ',pattern t
           nil nil)
-      (slime-rcurry #'slime-help-show-apropos (first pattern) buffer-package
+      (slime-rcurry #'slime-help-show-apropos (cl-first pattern) buffer-package
                     (slime-apropos-summary pattern nil
                                            nil t)))))
 

@@ -1,4 +1,5 @@
 (require :def-properties (merge-pathnames #p"cl-def-properties/module.lisp" (uiop/pathname:pathname-directory-pathname *load-pathname*)))
+(ql:quickload "split-sequence")
 (require :split-sequence)
 
 (defpackage :swank-help
