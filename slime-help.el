@@ -443,7 +443,7 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
     (error "No symbol given"))
   (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :function))))
     (when (null symbol-info)
-      (error "Could not read symbol informartion: %s" symbol-name))
+      (error "Could not read symbol information %s" symbol-name))
     (slime-help--funcallable symbol-name symbol-info :function)))
 
 ;; (slime-help-function "ALEXANDRIA:FLATTEN")
@@ -529,7 +529,7 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
     (error "No symbol given"))
   (let ((symbol-info (slime-eval `(swank-help:read-emacs-symbol-info (cl:read-from-string ,(slime-qualify-cl-symbol-name symbol-name)) :generic-function))))
     (when (null symbol-info)
-      (error "Could not read symbol informartion: %s" symbol-name))
+      (error "Could not read symbol information %s" symbol-name))
     (slime-help--funcallable
      symbol-name symbol-info
      :generic-function
