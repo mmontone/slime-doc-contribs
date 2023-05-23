@@ -53,7 +53,9 @@
 (defun read-emacs-package-info (package-name &optional shallow)
   (let ((package (or (and (typep package-name 'package)
                           package-name)
-                     (find-package package-name)
+		     ;; we use SWANK::PARSE-PACKAGE instead of CL:FIND-PACKAGE here
+		     ;; to support alternative values of CL:*PRINT-CASE*
+                     (swank::parse-package package-name)
                      (error "Package not found: ~a" package-name))))
     (list (cons :type :package)
           (cons :name (package-name package))
