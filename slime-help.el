@@ -39,6 +39,18 @@
   :prefix "slime-help-"
   :group 'slime)
 
+(defcustom slime-help-ansicl-lookup-function
+  'slime-hyperspec-lookup
+  "Function for looking up a symbol in ANSICL spec."
+  :type 'symbol
+  :group 'slime-help)
+
+(defun slime-help-ansicl-lookup (symbol-name)
+  "Lookup SYMBOL-NAME in ANSICL spec."
+  (interactive (list (common-lisp-hyperspec-read-symbol-name
+                      (slime-symbol-at-point))))
+  (funcall slime-help-ansicl-lookup-function symbol-name))
+
 (defgroup slime-help-faces nil
   "Faces of SLIME-HELP."
   :group 'slime-help)
@@ -507,15 +519,13 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
 
           (when (cl-member (cdr (assoc :package symbol-info))
                            '("COMMON-LISP" "CL") :test 'cl-equalp)
-            (cl-flet ((lookup-in-hyperspec (btn)
-                                           (ignore btn)
-                                           (slime-hyperspec-lookup
-                                            (prin1-to-string (cdr (assoc :symbol symbol-info))))))
-              (insert-button "Lookup in Hyperspec"
-                             'face 'slime-help-button
-                             'action (function lookup-in-hyperspec)
-                             'follow-link t
-                             'help-echo "Lookup variable in Hyperspec")))
+            (insert-button "Lookup in ANSICL spec"
+                           'face 'slime-help-button
+                           'action (lambda (_btn)
+                                     (funcall slime-help-ansicl-lookup-function
+                                              (prin1-to-string (cdr (assoc :symbol symbol-info)))))
+                           'follow-link t
+                           'help-echo "Lookup variable in ANSICL spec"))
 
           (slime-help--open-buffer)
           nil)))))
@@ -620,14 +630,13 @@ ARGS contains additional arguments, like 'extra-buttons."
 
         (when (cl-member (cdr (assoc :package symbol-info))
                          '("COMMON-LISP" "CL") :test 'cl-equalp)
-          (cl-flet ((lookup-in-hyperspec (_btn)
-                                         (slime-hyperspec-lookup
-                                          (prin1-to-string (cdr (assoc :symbol symbol-info))))))
-            (insert-button "Lookup in Hyperspec"
-                           'face 'slime-help-button
-                           'action (function lookup-in-hyperspec)
-                           'follow-link t
-                           'help-echo "Lookup variable in Hyperspec")))
+          (insert-button "Lookup in ANSICL spec"
+                         'face 'slime-help-button
+                         'action (lambda (_btn)
+                                   (funcall slime-help-ansicl-lookup-function
+                                            (prin1-to-string (cdr (assoc :symbol symbol-info)))))
+                         'follow-link t
+                         'help-echo "Lookup variable in ANSICL spec"))
 
         ;; TODO: add a collapsible extra section with debugging actions, like toggle tracing, toggle profiling, perhaps disassemble too.
 
@@ -725,14 +734,13 @@ ARGS contains additional arguments, like 'extra-buttons."
 
         (when (cl-member (cdr (assoc :package symbol-info))
                          '("COMMON-LISP" "CL") :test 'cl-equalp)
-          (cl-flet ((lookup-in-hyperspec (_btn)
-                                         (slime-hyperspec-lookup
-                                          (prin1-to-string (cdr (assoc :symbol symbol-info))))))
-            (insert-button "Lookup in Hyperspec"
-                           'face 'slime-help-button
-                           'action (function lookup-in-hyperspec)
-                           'follow-link t
-                           'help-echo "Lookup variable in Hyperspec")))
+          (insert-button "Lookup in ANSICL spec"
+                         'face 'slime-help-button
+                         'action (lambda (_btn)
+                                   (funcall slime-help-ansicl-lookup-function
+                                            (prin1-to-string (cdr (assoc :symbol symbol-info)))))
+                         'follow-link t
+                         'help-echo "Lookup variable in ANSICL spec"))
 
         (slime-help--open-buffer)
         nil))))
@@ -795,14 +803,13 @@ ARGS contains additional arguments, like 'extra-buttons."
 
         (when (cl-member (cdr (assoc :package symbol-info))
                          '("COMMON-LISP" "CL") :test 'cl-equalp)
-          (cl-flet ((lookup-in-hyperspec (_btn)
-                                         (slime-hyperspec-lookup
-                                          (prin1-to-string (cdr (assoc :symbol symbol-info))))))
-            (insert-button "Lookup in Hyperspec"
-                           'face 'slime-help-button
-                           'action (function lookup-in-hyperspec)
-                           'follow-link t
-                           'help-echo "Lookup variable in Hyperspec")))
+          (insert-button "Lookup in ANSICL spec"
+                         'face 'slime-help-button
+                         'action (lambda (_btn)
+                                   (funcall slime-help-ansicl-lookup-function
+                                            (prin1-to-string (cdr (assoc :symbol symbol-info)))))
+                         'follow-link t
+                         'help-echo "Lookup variable in ANSICL spec"))
 
         (newline 2)
 
@@ -1158,7 +1165,7 @@ search for matches for any two (or more) of those words."
     [ "Apropos Package..."      slime-help-apropos-package t]
     [ "Apropos documentation..." slime-help-apropos-documentation
       :help "Search in docstrings"]
-    [ "Hyperspec..."            slime-hyperspec-lookup t ]
+    [ "ANSI Common Lisp spec..."  slime-help-ansicl-lookup t ]
     "---"
     ["Quit" slime-help-quit
      :help "Quit SLIME help"]))
