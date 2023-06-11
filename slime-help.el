@@ -291,6 +291,7 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
         (:package (slime-help-package symbol-name))
         (:variable (slime-help-variable symbol-name))
         (:class (slime-help-class symbol-name))
+	(:special-operator (slime-help-special-operator symbol-name))
         (t (error "TODO"))))))
 
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
