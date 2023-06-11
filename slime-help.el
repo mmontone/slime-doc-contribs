@@ -416,7 +416,7 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
                            'help-echo "Describe package"))
           (newline)
           (when (cdr (assoc :documentation package-info))
-            (insert (cdr (assoc :documentation package-info)))
+            (insert (slime-oneliner (cdr (assoc :documentation package-info))))
             (newline)))
         (slime-help--open-buffer)
         nil))))
