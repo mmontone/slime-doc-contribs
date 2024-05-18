@@ -1,10 +1,12 @@
 (require :def-properties (merge-pathnames #p"cl-def-properties/module.lisp" (uiop/pathname:pathname-directory-pathname *load-pathname*)))
 (ql:quickload "split-sequence")
 (require :split-sequence)
+(require :uiop)
+(require :alexandria)
 
 (defpackage :swank-help
   (:use :cl :def-properties)
-  (:shadow #:apropos #:apropos-list)
+  (:shadow #:apropos #:apropos-list #:describe)
   (:export
    :read-emacs-symbol-info
    :read-emacs-package-info
@@ -12,7 +14,9 @@
    :read-emacs-packages-info
    :read-emacs-systems-info
    :apropos
-   :apropos-list))
+   :apropos-list
+   :describe)
+  (:documentation "Utilities for augmented help."))
 
 (in-package :swank-help)
 
@@ -53,8 +57,8 @@
 (defun read-emacs-package-info (package-name &optional shallow)
   (let ((package (or (and (typep package-name 'package)
                           package-name)
-		     ;; we use SWANK::PARSE-PACKAGE instead of CL:FIND-PACKAGE here
-		     ;; to support alternative values of CL:*PRINT-CASE*
+                     ;; we use SWANK::PARSE-PACKAGE instead of CL:FIND-PACKAGE here
+                     ;; to support alternative values of CL:*PRINT-CASE*
                      (swank::parse-package package-name)
                      (error "Package not found: ~a" package-name))))
     (list (cons :type :package)
@@ -205,5 +209,56 @@ If PRINT-DOCSTRING the the results docstrings are made part of the output."
                     (when (funcall matcher name-and-doc)
                       (pushnew symbol result))))))))
     result))
+
+(defgeneric describe (object &optional destination)
+  (:documentation "Print an augmented description of OBJECT to output DESTINATION."))
+
+(defmethod describe (object &optional (destination *standard-output*))
+  (cl:describe object destination))
+
+(defmethod describe ((package package) &optional (destination *standard-output*))
+  (uiop:with-output (out destination)
+    (cl:describe package out)
+
+    (format out "~%Exported definitions: ~%")
+
+    (do-external-symbols (symbol package)
+      (let* ((properties (car (symbol-properties symbol t 'cl:macro-function)))
+             (args (cdr (assoc :args properties))))
+        (when properties
+          (when (or (string= args "nil") ;; TODO: fix def-properties
+                    (string= args "NIL")
+                    (null args))
+            (setf args "()"))
+          ;;(prin1 properties out)
+          (format out "[MACRO] ~a ~a: ~%" symbol args)
+          (terpri out)
+          (alexandria:if-let ((docs (cdr (assoc :documentation properties))))
+            (write-string docs out)
+            (write-string "Not documented." out))
+          (terpri out)
+          (terpri out))))
+
+    (terpri out)
+
+    (do-external-symbols (symbol package)
+      (let* ((properties (car (symbol-properties symbol t 'cl:function)))
+             (args (cdr (assoc :args properties))))
+        (when properties
+          (when (or (string= args "nil") ;; TODO: fix def-properties
+                    (string= args "NIL")
+                    (null args))
+            (setf args "()"))
+          ;;(prin1 properties out)
+          (format out "[FUNCTION] ~a ~a: ~%" symbol args)
+          (terpri out)
+          (alexandria:if-let ((docs (cdr (assoc :documentation properties))))
+            (write-string docs out)
+            (write-string "Not documented." out))
+          (terpri out)
+          (terpri out))))))
+
+;; (describe (find-package :swank-help))
+
 
 (provide :swank-help)
