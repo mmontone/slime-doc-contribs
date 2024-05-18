@@ -246,19 +246,19 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
      ((and (listp word) (eql (cl-first word) :fn))
       (insert-button (cl-second word)
                      'action (lambda (_btn)
-                               (slime-help-function (third word)))
+                               (slime-help-function (cl-third word)))
                      'follow-link t
                      'help-echo "Describe function"))
      ((and (listp word) (eql (cl-first word) :macro))
       (insert-button (cl-second word)
                      'action (lambda (_btn)
-                               (slime-help-macro (third word)))
+                               (slime-help-macro (cl-third word)))
                      'follow-link t
                      'help-echo "Describe function"))
      ((and (listp word) (eql (cl-first word) :class))
       (insert-button (cl-second word)
                      'action (lambda (_btn)
-                               (slime-help-class (third word)))
+                               (slime-help-class (cl-third word)))
                      'follow-link t
                      'help-echo "Describe class"))
      ((and (listp word) (eql (cl-first word) :key))
@@ -266,13 +266,13 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
      ((and (listp word) (eql (cl-first word) :var))
       (insert-button (cl-second word)
                      'action (lambda (_btn)
-                               (slime-help-variable (third word)))
+                               (slime-help-variable (cl-third word)))
                      'follow-link t
                      'help-echo "Describe variable"))
      ((and (listp word) (eql (cl-first word) :special-operator))
       (insert-button (cl-second word)
                      'action (lambda (_btn)
-                               (slime-help-special-operator (third word)))
+                               (slime-help-special-operator (cl-third word)))
                      'follow-link t
                      'help-echo "Describe special operator"))
      (t (error "Don't know how to format: %s" word)))))
@@ -291,7 +291,7 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
         (:package (slime-help-package symbol-name))
         (:variable (slime-help-variable symbol-name))
         (:class (slime-help-class symbol-name))
-	(:special-operator (slime-help-special-operator symbol-name))
+	    (:special-operator (slime-help-special-operator symbol-name))
         (t (error "TODO"))))))
 
 ;;(slime-help-symbol "ALEXANDRIA:FLATTEN")
@@ -435,7 +435,7 @@ If PACKAGE is not given, SLIME-CURRENT-PACKAGE is used instead."
            (buffer (get-buffer-create buffer-name)))
       (with-current-buffer buffer
         (dolist (system-info systems-info)
-          (lexical-let ((cl-system-name (cdr (assoc :name system-info))))
+          (let ((cl-system-name (cdr (assoc :name system-info))))
             (insert-button cl-system-name
                            'action (lambda (btn)
                                      (ignore btn)
